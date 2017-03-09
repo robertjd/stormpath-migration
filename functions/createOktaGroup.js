@@ -3,7 +3,10 @@ const rp = require('request-promise').defaults({
     baseUrl: global.oktaBaseUrl,
     headers: global.oktaApiHeaders,
     json: true,
-    simple: true
+    simple: true,
+    agentOptions: {
+        keepAlive: false
+    }
 });
 
 module.exports = function(name, description, callback) {
@@ -17,12 +20,12 @@ module.exports = function(name, description, callback) {
     rp.get(findExistingGroup)
         .then(function (groups) {
             if (groups.length > 1) {
-                callback(util.format('Found too many Okta Groups matching name=%s', name), null);
+                callback(util.format('\tFound too many Okta Groups matching name=%s', name), null);
             } else if (groups.length === 1) {
                 if (groups[0].profile.description !== description) {
                     updateExistingGroup(groups[0].id, name, description, callback);
                 } else {
-                    console.log('Skipping creation of Okta Group \'%s\' because it already exists (id=%s)', name, groups[0].id);
+                    console.log('\tOkta Group \'%s\' already exists with id=%s', name, groups[0].id);
                     callback(null, groups[0].id);
                 }
             } else {
@@ -48,11 +51,11 @@ function createNewGroup(name, description, callback) {
 
     rp.post(groupData)
         .then(function (group) {
-            console.log('Created new Okta Group \'%s\' (id=%s).', name, group.id);
+            console.log('\tCreated new Okta Group \'%s\' (id=%s)', name, group.id);
             callback(null, group.id);
         })
         .catch(function (err) {
-            console.error('Failed to create Okta Group \'%s\': %s', name, err);
+            console.error('\tFailed to create Okta Group \'%s\': %s', name, err);
             callback(err, null);
         });
 }
@@ -70,11 +73,11 @@ function updateExistingGroup(id, name, description, callback) {
 
     rp.put(groupData)
         .then(function (group) {
-            console.log('Updated Okta Group \'%s\' (id=%s)', name, id);
+            console.log('\tUpdated Okta Group \'%s\' (id=%s)', name, id);
             callback(null, group.id);
         })
         .catch(function (err) {
-            console.error('Failed to update Okta Group \'%s\' (id=%s): %s', name, id, err);
+            console.error('\tFailed to update Okta Group \'%s\' (id=%s): %s', name, id, err);
             callback(err, null);
         });
 }

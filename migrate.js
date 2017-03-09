@@ -19,6 +19,13 @@ var argv = yargs.usage('\nMigration tool to import Stormpath data into an Okta t
                  description: 'API token for your Okta tenant (SSWS token)',
                 required: true,
                 alias: 't'
+            },
+            excludeCustomData: {
+                description: 'Skip importing of custom data from Stormpath Accounts. This can significantly speed up the import.',
+                required: false,
+                type: 'boolean',
+                default: false,
+                alias: 'x'
             }
         }
     )
@@ -33,6 +40,7 @@ var argv = yargs.usage('\nMigration tool to import Stormpath data into an Okta t
 
 //Configure globals:
 global.stormPathBaseDir = argv.stormPathBaseDir;
+global.excludeCustomData = argv.excludeCustomData;
 global.oktaBaseUrl = argv.oktaBaseUrl;
 global.oktaApiToken = argv.oktaApiToken;
 global.oktaApiHeaders = {
@@ -45,7 +53,7 @@ global.oktaApiHeaders = {
 require('./migrators/migrateDirectories');
 
 //TODO:
-//require('./migrators/migrateGroups');
-//require('./migrators/migrateApplications');
-//require('./migrators/migrationOrganizations');
-//require('./migrators/migratePolicies');
+//require('./migrators/migrateGroups');             OKTA-118834
+//require('./migrators/migrateApplications');       OKTA-118835
+//require('./migrators/migrationOrganizations');    OKTA-118836
+//require('./migrators/migratePolicies');           OKTA-118838

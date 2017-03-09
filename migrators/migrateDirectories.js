@@ -6,6 +6,7 @@ const Promise = require('bluebird');
 const createOktaUser = Promise.promisify(require('../functions/createOktaUser'));
 const createOktaGroup = Promise.promisify(require('../functions/createOktaGroup'));
 const addUserToGroup = Promise.promisify(require('../functions/addUserToGroup'));
+const addCustomSchemaProperties = Promise.promisify(require('../functions/addCustomSchemaProperties'));
 
 const directoriesPath = path.join(global.stormPathBaseDir, 'directories');
 const providersPath = path.join(global.stormPathBaseDir, 'providers');
@@ -42,7 +43,7 @@ directoryFiles.forEach(function(file, index) {
 function createUsersForDirectory(directoryId, groupId) {
     var accountsPath = path.join(global.stormPathBaseDir, 'accounts', directoryId);
     var accountFiles = fs.readdirSync(accountsPath, 'utf8');
-    console.log('About to import %d Accounts for Stormpath Directory \'%s\'...', accountFiles.length, directoryId);
+    console.log('\tAbout to import %d Accounts for Stormpath Directory \'%s\'...', accountFiles.length, directoryId);
 
     accountFiles.forEach(function (file, index) {
         if (path.extname(file) !== '.json') {
@@ -50,21 +51,34 @@ function createUsersForDirectory(directoryId, groupId) {
         }
 
         var accountId = path.basename(file, '.json');
-        console.log('Processing Stormpath Account \'%s\'...', accountId);
+        console.log('\tProcessing Stormpath Account \'%s\'...', accountId);
 
         var fullAccountPath = path.join(accountsPath, file);
         var accountJson = JSON.parse(fs.readFileSync(fullAccountPath, 'utf8'));
 
-        var userName = accountJson.username;
-        var email = accountJson.email;
-        var firstName = accountJson.givenName;
-        var middleName = accountJson.middleName;
-        var lastName = accountJson.surname;
-        var displayName = accountJson.fullName;
+        var profileAttributes = {
+            login: accountJson.username,
+            email: accountJson.email,
+            firstName: accountJson.givenName,
+            middleName: accountJson.middleName,
+            lastName: accountJson.surname,
+            displayName: accountJson.fullName
+        };
 
-        createOktaUser(userName, email, firstName, middleName, lastName, displayName)
-            .then(function(userId) {
-                addUserToGroup(userId, groupId);
-            });
+        if (!global.excludeCustomData) {
+            addCustomSchemaProperties(directoryId, file)
+                .then(function(customProfileAttrs) {
+                    Object.assign(profileAttributes, customProfileAttrs); //add the customProfileAttrs to the existing profileAttrs
+                    createOktaUser(profileAttributes)
+                        .then(function(userId) {
+                            addUserToGroup(userId, groupId);
+                        });
+                });
+        } else {
+            createOktaUser(profileAttributes)
+                .then(function(userId) {
+                    addUserToGroup(userId, groupId);
+                });
+        }
     });
 }
