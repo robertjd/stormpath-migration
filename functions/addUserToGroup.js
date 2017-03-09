@@ -3,7 +3,10 @@ const rp = require('request-promise').defaults({
     baseUrl: global.oktaBaseUrl,
     headers: global.oktaApiHeaders,
     json: true,
-    simple: true
+    simple: true,
+    agentOptions: {
+        keepAlive: false
+    }
 });
 
 module.exports = function(userId, groupId, callback) {
@@ -13,11 +16,11 @@ module.exports = function(userId, groupId, callback) {
 
     rp.put(groupData)
         .then(function (group) {
-            console.log('userId=%s is now a member of groupId=%s', userId, groupId);
+            console.log('\tOkta User %s is now a member of Okta Group %s', userId, groupId);
             callback(null, true);
         })
         .catch(function (err) {
-            console.error('Failed to add userId=%s to groupId=%s: %s', userId, groupId, err);
+            console.error('\tFailed to add userId=%s to groupId=%s: %s', userId, groupId, err);
             callback(err, null);
         });
 }
