@@ -24,11 +24,6 @@ To use this tool, you must have a Stormpath export unzipped on your local filesy
 │   │   │   │   ├── {accountId}.json
 │   │   │   │   ├-- ....
 │   │   │   ├-- ....
-│   │   ├── customData/
-│   │   │   ├── {directoryId}/
-│   │   │   │   ├── {accountId}.json
-│   │   │   │   ├-- ....
-│   │   │   ├-- ....
 │   │   ├── groups/
 │   │   │   ├── {directoryId}/
 │   │   │   │   ├── {groupId}.json
@@ -61,13 +56,6 @@ Here's a concrete example:
 │   │   │   ├── 7ZBZLdnlxFsEtIs4BRpUHk/
 │   │   │   │   ├── 4DfxGCAyrxNyiqjPQIHfHI.json
 │   │   │   │   ├-- ....
-│   │   ├── customData/
-│   │   │   ├── 5LInED46hB6nv9auaOrIYW/
-│   │   │   │   ├── 8LJuP3l2Lke9XWL4Vpie3o.json
-│   │   │   │   ├-- ....
-│   │   │   ├── 7ZBZLdnlxFsEtIs4BRpUHk/
-│   │   │   │   ├── 4DfxGCAyrxNyiqjPQIHfHI.json
-│   │   │   │   ├-- ....
 │   │   ├── groups/
 │   │   │   ├── 5LInED46hB6nv9auaOrIYW/
 │   │   │   │   ├── 1iMYLWrjvnc833sPCBVbtU.json
@@ -94,13 +82,13 @@ node migrate.js --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://yo
 
 ### Required Args:
 ```
-  --stormPathBaseDir  (-b)   Root directory where Stormpath export data lives                                                                 
-  --oktaBaseUrl       (-u)   Base URL of your Okta tenant                
+  --stormPathBaseDir  (-b)   Root directory where Stormpath export data lives
+  --oktaBaseUrl       (-u)   Base URL of your Okta tenant
   --oktaApiToken      (-t)   API token for your Okta tenant (SSWS token)
 ```
 
 ### Optional Args:
 ```
   --excludeCustomData (-x)   Skip importing of custom data from Stormpath Accounts.
-                             This can significantly speed up the import if you choose to migrate your custom data separately.
+  --concurrencyLimit  (-l)   Max number of concurrent requests to Okta
 ```
