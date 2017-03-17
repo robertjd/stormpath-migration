@@ -5,7 +5,7 @@ https://oktawiki.atlassian.net/wiki/display/eng/Salamander+Customer+Migrations
 
 ## Requirements
 
-- [Node JS 6.9.1 or higher](https://nodejs.org/en/download/)
+- [Node JS 7.6 or higher](https://nodejs.org/en/download/)
 - (Note to devs: set your IDE project language version to ECMAScript 6)
 
 ## Prerequisites
