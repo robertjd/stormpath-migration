@@ -1,7 +1,8 @@
 class Base {
-  constructor(path, json) {
+  constructor(path, json, config) {
     this.path = path;
     this.json = json;
+    this.config = config;
   }
 }
 

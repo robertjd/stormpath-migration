@@ -50,6 +50,24 @@ function transform(original) {
 
 class Account extends Base {
 
+  getProfileAttributes() {
+    const profileAttributes = {
+      login: this.json.username,
+      email: this.json.email,
+      firstName: this.json.givenName,
+      middleName: this.json.middleName,
+      lastName: this.json.surname,
+      displayName: this.json.fullName
+    };
+    if (!this.config.excludeCustomData) {
+      const customData = this.getCustomData();
+      Object.keys(this.getCustomData()).forEach((key) => {
+        profileAttributes[key] = customData[key].val;
+      });
+    }
+    return profileAttributes;
+  }
+
   getCustomData() {
     const skip = ['createdAt', 'modifiedAt', 'href'];
     const keys = Object.keys(this.json.customData).filter(key => skip.indexOf(key) === -1);
@@ -80,4 +98,3 @@ class Account extends Base {
 }
 
 module.exports = Account;
-

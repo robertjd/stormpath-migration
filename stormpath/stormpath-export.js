@@ -8,9 +8,10 @@ const Base = require('./base');
  * file contents when traversed.
  * @param {String} dir
  * @param {Class} Klass
+ * @param {Object} config
  * @returns {Iterator} {fullPath, json}
  */
-function* fileIterator(dir, Klass) {
+function* fileIterator(dir, Klass, config) {
   const files = fs.readdirSync(dir, 'utf8');
   let i = 0;
   while(i < files.length) {
@@ -20,30 +21,31 @@ function* fileIterator(dir, Klass) {
     }
     const fullPath = `${dir}/${file}`;
     const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-    yield new Klass(fullPath, json);
+    yield new Klass(fullPath, json, config);
   }
 }
 
 class StormpathExport {
 
-  constructor(stormpathBaseDir) {
-    this.baseDir = stormpathBaseDir;
+  constructor(config) {
+    this.baseDir = config.stormPathBaseDir;
+    this.config = config;
   }
 
   getAccounts() {
-    return fileIterator(`${this.baseDir}/accounts`, Account);
+    return fileIterator(`${this.baseDir}/accounts`, Account, this.config);
   }
 
   getDirectories() {
-    return fileIterator(`${this.baseDir}/directories`, Base);
+    return fileIterator(`${this.baseDir}/directories`, Base, this.config);
   }
 
   getGroups() {
-    return fileIterator(`${this.baseDir}/groups`, Base);
+    return fileIterator(`${this.baseDir}/groups`, Base, this.config);
   }
 
   getOrganizations() {
-    return fileIterator(`${this.baseDir}/organizations`, Base);
+    return fileIterator(`${this.baseDir}/organizations`, Base, this.config);
   }
 
 }

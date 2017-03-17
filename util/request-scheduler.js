@@ -104,21 +104,21 @@ class RequestScheduler {
 
   /**
    * Constructor
-   * @param {Object} options
-   * @param {String} options.baseUrl
-   * @param {String} options.oktaApiToken
-   * @param {Number} options.concurrencyLimit
+   * @param {Object} config
+   * @param {String} config.oktaBaseUrl
+   * @param {String} config.oktaApiToken
+   * @param {Number} config.concurrencyLimit
    */
-  constructor(options) {
-    this.concurrencyLimit = options.concurrencyLimit;
+  constructor(config) {
+    this.concurrencyLimit = config.concurrencyLimit;
     this.pending = 0;
     this.queue = [];
     this.rp = rp.defaults({
-      baseUrl: options.baseUrl,
+      baseUrl: config.oktaBaseUrl,
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `SSWS ${options.oktaApiToken}`
+        'Authorization': `SSWS ${config.oktaApiToken}`
       },
       resolveWithFullResponse: true,
       json: true,
@@ -145,6 +145,12 @@ class RequestScheduler {
   post() {
     const msg = `POST ${JSON.stringify(arguments)}`;
     return schedule(this, msg, () => this.rp.post.apply(null, arguments));
+  }
+
+  /** Wrapper around request-promise.delete */
+  delete() {
+    const msg = `DELETE ${JSON.stringify(arguments)}`;
+    return schedule(this, msg, () => this.rp.delete.apply(null, arguments));
   }
 
 }
