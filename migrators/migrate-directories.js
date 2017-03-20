@@ -1,25 +1,30 @@
 const Promise = require('bluebird');
-const log = require('debug')('log');
-const warn = require('debug')('warn');
+const logger = require('../util/logger');
+const rs = require('../util/request-scheduler');
+const stormpathExport = require('../stormpath/stormpath-export');
 const createOktaGroup = require('../functions/create-okta-group');
 
-function migrateCloudDirectory(rs, directory) {
+function migrateCloudDirectory(directory) {
   const name = `dir:${directory.name}`;
   const description = directory.description;
-  return createOktaGroup(rs, name, description);
+  return createOktaGroup(name, description);
 }
 
-function migrateSamlDirectory(rs, directory) {
-  log(`Not implemented yet: ${directory.provider.providerId}`);
+function migrateSamlDirectory(directory) {
+  logger.error(`Not implemented yet: ${directory.provider.providerId}`);
   return Promise.resolve();
 }
 
-function migrateSocial(rs, directory) {
-  log(`Not implemented yet: ${directory.provider.providerId}`);
+function migrateSocial(directory) {
+  logger.error(`Not implemented yet: ${directory.provider.providerId}`);
   return Promise.resolve();
 }
 
-function migrate(rs, stormpathExport) {
+function migrateDirectories() {
+  logger.header('Starting directories import');
+  logger.warn('TODO: assign users');
+  logger.warn('TODO: social import');
+  logger.warn('TODO: saml import');
   const directories = stormpathExport.getDirectories();
   const pending = [];
   for (let directory of directories) {
@@ -27,29 +32,29 @@ function migrate(rs, stormpathExport) {
     const providerName = json.provider.providerId;
     switch (providerName) {
     case 'stormpath':
-      pending.push(migrateCloudDirectory(rs, json));
+      pending.push(migrateCloudDirectory(json));
       break;
     case 'saml':
-      pending.push(migrateSamlDirectory(rs, json));
+      pending.push(migrateSamlDirectory(json));
       break;
     case 'facebook':
     case 'google':
     case 'linkedin':
-      pending.push(migrateSocialDirectory(rs, json));
+      pending.push(migrateSocialDirectory(json));
       break;
     case 'ad':
     case 'ldap':
       // We should include a link to some documentation they can use to setup
       // the AD agent the run the import.
-      warn('${providerName} directories must be imported with the Okta agent');
+      logger.warn('${providerName} directories must be imported with the Okta agent');
       break;
     default:
       // github, twitter
-      warn(`We do not support migrating the '${providerName}' directory type`);
+      logger.warn(`We do not support migrating the '${providerName}' directory type`);
       break;
     }
   }
   return Promise.all(pending);
 }
 
-module.exports = migrate;
+module.exports = migrateDirectories;

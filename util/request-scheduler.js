@@ -1,8 +1,9 @@
 'use strict';
 
 const Promise = require('bluebird');
-const debug = require('debug')('request-scheduler');
 const rp = require('request-promise');
+const logger = require('../util/logger');
+const config = require('../util/config');
 
 /**
  * Calculates the time to schedule the next request in milliseconds - returns 0
@@ -22,12 +23,12 @@ function timeToNextRequest(headers) {
   // 2. If error and not 429, make a request to /api/v1/users/me to check
   //    current rate limit. Are we flying too close to the sun?
   if (remaining === undefined) {
-    debug('No rate-limit headers on error response, continuing');
+    logger.debug('No rate-limit headers on error response, continuing');
     return 0;
   }
 
   if (remaining > 0) {
-    debug(`x-rate-limit-remaining ${remaining}`);
+    logger.debug(`x-rate-limit-remaining ${remaining}`);
     return 0;
   }
 
@@ -37,7 +38,7 @@ function timeToNextRequest(headers) {
   // Add an extra buffer of 1000ms
   const time = serverResetUtcMs - serverTimeUtcMs + 1000;
 
-  debug(`Rate limit reached, scheduling next request in ${time}ms`);
+  logger.debug(`Rate limit reached, scheduling next request in ${time}ms`);
   return time;
 }
 
@@ -46,24 +47,23 @@ function timeToNextRequest(headers) {
  * @param {RequestScheduler} scheduler
  */
 function execute(scheduler) {
-
   if (scheduler.pending >= scheduler.concurrencyLimit) {
-    debug(`${next.msg} [Concurrency limit ${scheduler.concurrencyLimit} reached, deferring]`);
+    logger.debug(`${next.msg} [Concurrency limit ${scheduler.concurrencyLimit} reached, deferring]`);
     return;
   }
 
   const next = scheduler.queue.shift();
   if (!next) {
-    debug('Queue empty');
+    logger.debug('Queue empty');
     return;
   }
 
-  debug(`${next.msg} [Requesting, ${scheduler.pending}]`);
+  logger.debug(`${next.msg} [Requesting, ${scheduler.pending}]`);
 
   scheduler.pending++;
   const after = (type, res) => {
     scheduler.pending--;
-    debug(`${next.msg} [${type}, ${scheduler.pending}]`);
+    logger.debug(`${next.msg} [${type}, ${scheduler.pending}]`);
     const headers = res.headers || res.response.headers;
     setTimeout(() => execute(scheduler), timeToNextRequest(headers));
   };
@@ -88,7 +88,7 @@ function execute(scheduler) {
  */
 function schedule(scheduler, msg, fn) {
   const promise = new Promise((resolve, reject) => {
-    debug(`${msg} [Schedule]`);
+    logger.debug(`${msg} [Schedule]`);
     scheduler.queue.push({ msg, fn, resolve, reject });
   });
   execute(scheduler);
@@ -102,14 +102,8 @@ function schedule(scheduler, msg, fn) {
  */
 class RequestScheduler {
 
-  /**
-   * Constructor
-   * @param {Object} config
-   * @param {String} config.oktaBaseUrl
-   * @param {String} config.oktaApiToken
-   * @param {Number} config.concurrencyLimit
-   */
-  constructor(config) {
+  /** Constructor */
+  constructor() {
     this.concurrencyLimit = config.concurrencyLimit;
     this.pending = 0;
     this.queue = [];
@@ -155,4 +149,4 @@ class RequestScheduler {
 
 }
 
-module.exports = RequestScheduler;
+module.exports = new RequestScheduler();

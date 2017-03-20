@@ -1,15 +1,13 @@
-const log = require('debug')('log');
+const logger = require('../util/logger');
+const rs = require('../util/request-scheduler');
 
-async function addUserToGroup(rs, userId, groupId) {
-  log(`Trying to add userId=${userId} to groupId=${groupId}`);
-  const options = {
-    url: `/api/v1/groups/${groupId}/users/${userId}`
-  };
+async function addUserToGroup(userId, groupId) {
+  logger.verbose(`Trying to add uid=${userId} to gid=${groupId}`);
   try {
-    await rs.put(options);
-    log(`Added userId=${userId} to groupId=${groupId}`);
+    await rs.put({ url: `/api/v1/groups/${groupId}/users/${userId}` });
+    logger.created(`Group Membership uid=${userId} gid=${groupId}`);
   } catch (err) {
-    console.error(`Failed to add userId=${userId} to groupId=${groupId}: ${err}`);
+    logger.error(`Failed to add uid=${userId} to gid=${groupId}: ${err}`);
   }
 }
 

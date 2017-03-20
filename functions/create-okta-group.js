@@ -1,8 +1,10 @@
-const log = require('debug')('log');
+const logger = require('../util/logger');
+const rs = require('../util/request-scheduler');
 
 const GROUPS_PATH = '/api/v1/groups';
 
-async function getExistingGroup(rs, name) {
+async function getExistingGroup(name) {
+  logger.verbose(`Getting existing group name=${name}`);
   const groups = await rs.get({
     url: GROUPS_PATH,
     qs: {
@@ -16,11 +18,11 @@ async function getExistingGroup(rs, name) {
   return exactMatches.length === 1 ? exactMatches[0] : null;
 }
 
-async function updateExistingGroup(rs, group, description) {
-  log(`Existing group found with name '${group.profile.name}' id=${group.id}`);
+async function updateExistingGroup(group, description) {
+  logger.verbose(`Existing group found with name '${group.profile.name}' id=${group.id}`);
 
   if (description === group.profile.description) {
-    log('Same description, no action');
+    logger.exists(`Found matching Group id=${group.id} name=${group.profile.name}`);
     return;
   }
 
@@ -34,15 +36,15 @@ async function updateExistingGroup(rs, group, description) {
         }
       }
     });
-    log(`Updated Okta group '${group.profile.name}' (id=${group.id})`);
+    logger.updated(`Group id=${group.id} name=${group.profile.name}`);
     return group;
   } catch (err) {
-    throw new Error(`Failed to update Okta Group '${group.profile.name}' (id=${group.id}): ${err}`);
+    throw new Error(`Failed to update okta group name=${group.profile.name} id=${group.id}: ${err}`);
   }
 }
 
-async function createNewGroup(rs, name, description) {
-  log(`No groups found with name '${name}', creating`);
+async function createNewGroup(name, description) {
+  logger.verbose(`No groups found with name=${name}`);
   try {
     const group = await rs.post({
       url: GROUPS_PATH,
@@ -53,22 +55,22 @@ async function createNewGroup(rs, name, description) {
         }
       }
     });
-    log(`Created new Okta group '${name}' (id=${group.id})`);
+    logger.created(`Group id=${group.id} name=${name}`);
     return group;
   } catch (err) {
-    throw new Error(`Failed to create new group '${name}' ${err}`);
+    throw new Error(`Failed to create Group name=${name}: ${err}`);
   }
 }
 
-async function createOktaGroup(rs, name, description) {
-  log(`Trying to create okta group ${name}`);
+async function createOktaGroup(name, description) {
+  logger.verbose(`Trying to create okta group ${name}`);
   try {
-    const group = await getExistingGroup(rs, name);
+    const group = await getExistingGroup(name);
     return group
-      ? await updateExistingGroup(rs, group, description)
-      : await createNewGroup(rs, name, description);
+      ? updateExistingGroup(group, description)
+      : createNewGroup(name, description);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
   }
 }
 

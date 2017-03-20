@@ -1,5 +1,6 @@
 const Base = require('./base');
-const warn = require('debug')('warn');
+const logger = require('../util/logger');
+const config = require('../util/config');
 
 /**
  * Transforms custom data value to an object with:
@@ -59,7 +60,7 @@ class Account extends Base {
       lastName: this.json.surname,
       displayName: this.json.fullName
     };
-    if (!this.config.excludeCustomData) {
+    if (!config.excludeCustomData) {
       const customData = this.getCustomData();
       Object.keys(this.getCustomData()).forEach((key) => {
         profileAttributes[key] = customData[key].val;
@@ -90,7 +91,7 @@ class Account extends Base {
     });
     const numApiKeys = this.json.apiKeys.length;
     if (numApiKeys > 10) {
-      warn(`User has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys`);
+      logger.warn(`Account id=${this.json.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys`);
     }
 
     return customData;

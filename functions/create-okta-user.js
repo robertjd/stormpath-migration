@@ -1,8 +1,10 @@
-const log = require('debug')('log');
+const logger = require('../util/logger');
+const rs = require('../util/request-scheduler');
 
 const USERS_PATH = '/api/v1/users';
 
-async function getExistingUser(rs, profile) {
+async function getExistingUser(profile) {
+  logger.verbose(`GET existing user login=${profile.login}`);
   const users = await rs.get({
     url: USERS_PATH,
     qs: {
@@ -12,8 +14,8 @@ async function getExistingUser(rs, profile) {
   return users.length > 0 ? users[0] : null;
 }
 
-async function updateExistingUser(rs, id, profile) {
-  log(`Existing user found with login ${profile.login} (id=${id}), updating`);
+async function updateExistingUser(id, profile) {
+  logger.verbose(`Existing user found with login=${profile.login} id=${id}, updating`);
   try {
     const user = await rs.post({
       url: `${USERS_PATH}/${id}`,
@@ -29,15 +31,15 @@ async function updateExistingUser(rs, id, profile) {
         //}
       }
     });
-    log(`Updated Okta user '${profile.login}' (id=${id})`);
+    logger.updated(`User id=${id} login=${profile.login}`);
     return user;
   } catch (err) {
-    throw new Error(`Failed to update Okta user '${profile.login}: ${err}'`);
+    throw new Error(`Failed to update okta user login=${profile.login}: ${err}'`);
   }
 }
 
-async function createNewUser(rs, profile) {
-  log(`No users found with login '${profile.login}', creating`);
+async function createNewUser(profile) {
+  logger.verbose(`No users found with login=${profile.login}`);
   try {
     const user = await rs.post({
       url: USERS_PATH,
@@ -53,22 +55,22 @@ async function createNewUser(rs, profile) {
         //}
       }
     });
-    log(`Created new Okta user '${profile.login}' (id=${user.id})`);
+    logger.created(`User id=${user.id} login=${profile.login}`);
     return user;
   } catch (err) {
-    throw new Error(`Failed to create Okta user '${profile.login}: ${err}'`);
+    throw new Error(`Failed to create Okta user login=${profile.login}: ${err}`);
   }
 }
 
-async function createOktaUser(rs, profile) {
-  log(`Trying to create Okta user ${profile.login}`);
+async function createOktaUser(profile) {
+  logger.verbose(`Trying to create Okta user login=${profile.login}`);
   try {
-    const user = await getExistingUser(rs, profile);
+    const user = await getExistingUser(profile);
     return user
-      ? await updateExistingUser(rs, user.id, profile)
-      : await createNewUser(rs, profile);
+      ? updateExistingUser(user.id, profile)
+      : createNewUser(profile);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
   }
 }
 
