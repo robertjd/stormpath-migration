@@ -1,12 +1,11 @@
 const util = require('util');
-const debug = require('debug');
-const log = debug('log');
-const verbose = debug('verbose');
+const logger = require('../util/logger');
+const rs = require('../util/request-scheduler');
 
 const SCHEMA_PATH = '/api/v1/meta/schemas/user/default';
 
-async function getCurrentProperties(rs) {
-  log('Getting current schema properties');
+async function getCurrentProperties() {
+  logger.verbose('Getting current schema properties');
   const res = await rs.get(SCHEMA_PATH);
 
   // Note: Base properties are also unique, so we must not try to add a
@@ -14,14 +13,12 @@ async function getCurrentProperties(rs) {
   const baseProperties = res.definitions.base.properties;
   const customProperties = res.definitions.custom.properties;
   const allProperties = Object.assign({}, baseProperties, customProperties);
-  verbose('Current Okta schema properties');
-  verbose(allProperties);
+  logger.silly('Current Okta schema properties', allProperties);
   return allProperties;
 }
 
-async function createProperties(rs, properties) {
-  log('Found new custom schema properties, adding');
-  verbose(properties);
+async function createProperties(properties) {
+  logger.verbose('Found new custom schema properties, adding', properties);
   await rs.post({
     url: SCHEMA_PATH,
     body: {
@@ -35,13 +32,19 @@ async function createProperties(rs, properties) {
       }
     }
   });
-  log('Successfully updated Okta User custom schema');
+  logger.created(`Custom schema properties`, Object.keys(properties).map((key, index) => {
+    const property = properties[key];
+    const type = property.type === 'array'
+      ? `${property.items.type} ${property.type}`
+      : property.type;
+    return { index, property: property.title, type };
+  }));
 }
 
-async function addCustomSchemaProperties(rs, customProperties) {
-  log('Adding custom schema properties');
+async function addCustomSchemaProperties(customProperties) {
+  logger.verbose('Adding custom schema properties');
   try {
-    const currentProperties = await getCurrentProperties(rs);
+    const currentProperties = await getCurrentProperties();
 
     // Filter out properties that have already been created, or exist as
     // base properties.
@@ -65,16 +68,15 @@ async function addCustomSchemaProperties(rs, customProperties) {
     });
 
     if (Object.keys(propertiesToAdd).length === 0) {
-      log('No custom schema properties to add, continuing');
+      logger.exists('No new custom schema properties to add');
       return;
     }
 
-    return await createProperties(rs, propertiesToAdd);
+    return await createProperties(propertiesToAdd);
   } catch (err) {
     // Errors when creating custom schema properties are unrecoverable - if
     // this happens, stop the script
-    console.error('Failed to add custom schema properties, aborting script');
-    console.error(err);
+    logger.error('Failed to add custom schema properties, aborting script', err);
     process.exit(1);
   }
 }

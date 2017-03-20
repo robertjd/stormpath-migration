@@ -30,6 +30,14 @@ function getSchemaProperty(key, schema) {
   return property;
 }
 
+function compareKeys(key1, key2) {
+  const apiKey = 'stormpathApiKey_';
+  if (key1.indexOf(apiKey) === -1 || key2.indexOf(apiKey) === -1) {
+    return key1 > key2 ? 1 : (key1 === key2 ? 0 : -1);
+  }
+  return Number(key1.replace(apiKey, '')) - Number(key2.replace(apiKey, ''));
+}
+
 class SchemaProperties {
 
   constructor() {
@@ -58,7 +66,7 @@ class SchemaProperties {
    */
   getProperties() {
     const properties = {};
-    Object.keys(this.properties).sort().forEach((key) => {
+    Object.keys(this.properties).sort(compareKeys).forEach((key) => {
       const property = getSchemaProperty(key, this.properties[key]);
       properties[property.key] = property.val;
     });
