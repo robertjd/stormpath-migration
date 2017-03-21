@@ -43,7 +43,7 @@ async function createNewOAuthClient(name) {
           'password',
           'refresh_token'
         ],
-        'redirect_uris': ['http://foo.com'],
+        'redirect_uris': ['https://www.okta.com/redirect-not-provided'],
         'token_endpoint_auth_method': 'client_secret_basic',
         'application_type': 'web'
       }

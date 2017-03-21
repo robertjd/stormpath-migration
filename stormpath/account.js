@@ -60,28 +60,31 @@ class Account extends Base {
       lastName: this.json.surname,
       displayName: this.json.fullName
     };
-    if (!config.excludeCustomData) {
-      const customData = this.getCustomData();
-      Object.keys(this.getCustomData()).forEach((key) => {
-        profileAttributes[key] = customData[key].val;
-      });
-    }
+    const customData = this.getCustomData();
+    Object.keys(customData).forEach((key) => {
+      profileAttributes[key] = customData[key].val;
+    });
     return profileAttributes;
   }
 
   getCustomData() {
-    const skip = ['createdAt', 'modifiedAt', 'href'];
-    const keys = Object.keys(this.json.customData).filter(key => skip.indexOf(key) === -1);
     const customData = {};
 
-    keys.forEach((key) => {
-      // We store apiKeys/secrets under the stormpathApiKey_ namespace, throw
-      // an error if they try to create a custom property with this key
-      if (key.indexOf('stormpathApiKey_') === 0) {
-        throw new Error(`${key} is a reserved property name`);
-      }
-      customData[key] = transform(this.json.customData[key]);
-    });
+    if (config.isCustomDataStringify) {
+      customData['customData'] = transform(JSON.stringify(this.json.customData));
+    }
+    else if (config.isCustomDataSchema) {
+     const skip = ['createdAt', 'modifiedAt', 'href'];
+     const keys = Object.keys(this.json.customData).filter(key => skip.indexOf(key) === -1);
+     keys.forEach((key) => {
+        // We store apiKeys/secrets under the stormpathApiKey_ namespace, throw
+        // an error if they try to create a custom property with this key
+        if (key.indexOf('stormpathApiKey_') === 0) {
+          throw new Error(`${key} is a reserved property name`);
+        }
+        customData[key] = transform(this.json.customData[key]);
+      });
+    }
 
     // Add apiKeys to custom data with the special keys stormpathApiKey_*
     this.json.apiKeys.forEach((key, i) => {
@@ -91,7 +94,7 @@ class Account extends Base {
     });
     const numApiKeys = this.json.apiKeys.length;
     if (numApiKeys > 10) {
-      logger.warn(`Account id=${this.json.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys`);
+      logger.warn(`Account id=${this.json.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys.`);
     }
 
     return customData;

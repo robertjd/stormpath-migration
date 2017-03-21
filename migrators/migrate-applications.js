@@ -14,7 +14,7 @@ async function migrateApplications() {
       const name = `app:${application.json.name}`;
       const [client, as] = await Promise.all([
         createOAuthClient(name),
-        createAuthorizationServer(name)
+        createAuthorizationServer(name, application.json.href)
       ]);
       await addAuthorizationServerToOAuthClient(as, client);
     } catch (err) {
