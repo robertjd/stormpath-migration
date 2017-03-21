@@ -44,7 +44,10 @@ async function createNewUser(profile) {
     const user = await rs.post({
       url: USERS_PATH,
       body: {
-        profile
+        profile,
+        credentials: {
+          password: 'TEMPORARY_password1234'
+        }
         //TODO: once REQ-1274 is finished
         //'credentials': {
         //    "password": {

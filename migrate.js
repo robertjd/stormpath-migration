@@ -13,9 +13,8 @@ logger.setLevel(config.logLevel);
 logger.info(`Starting import...`);
 
 async function migrate() {
-  const cache = introspect();
-
   try {
+    const cache = introspect();
     await migrateCustomSchema(cache);
     await migrateDirectories();
     await migrateGroups();

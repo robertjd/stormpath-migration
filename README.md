@@ -80,15 +80,37 @@ npm install
 node migrate.js --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://your-org.okta.com --oktaApiToken 5DSfsl4x@3Slt6
 ```
 
-### Required Args:
-```
-  --stormPathBaseDir  (-b)   Root directory where Stormpath export data lives
-  --oktaBaseUrl       (-u)   Base URL of your Okta tenant
-  --oktaApiToken      (-t)   API token for your Okta tenant (SSWS token)
-```
+### Required Args
 
-### Optional Args:
-```
-  --excludeCustomData (-x)   Skip importing of custom data from Stormpath Accounts.
-  --concurrencyLimit  (-l)   Max number of concurrent requests to Okta
-```
+**--stormPathBaseDir (-b)** Root directory where your Stormpath tenant export data lives
+
+- Example: `--stormPathBaseDir ~/Desktop/stormpath-exports/683IDSZVtUQewtFoqVrIEe`
+
+**--oktaBaseUrl (-u)** Base URL of your Okta tenant
+
+- Example: `--oktaBaseUrl https://your-org.okta.com`
+
+**--oktaApiToken (-t)** API token for your Okta tenant (SSWS token)
+
+- Example: `--oktaApiToken 00gdoRRz2HUBdy06kTDwTOiPeVInGKpKfG-H4P_Lij`
+
+### Optional Args
+
+**--customData (-d)** Strategy for importing Stormpath Account custom data. Defaults to `schema`.
+
+- Options
+
+  - `schema` - Add [custom user profile schema properties](http://developer.okta.com/docs/api/resources/schemas.html#user-profile-schema-property-object) for each custom data property. Use this for simple custom data objects.
+  - `stringify` - Stringify the Account custom data object into one `customData` [custom user profile schema property](http://developer.okta.com/docs/api/resources/schemas.html#user-profile-schema-property-object). Use this for more complex custom data objects.
+  - `exclude` - Exclude Stormpath Account custom data from the import
+
+- Example: `--customData stringify`
+
+**--concurrencyLimit (-c)** Max number of concurrent requests to Okta. Defaults to `100`.
+
+- Example: `--concurrencyLimit 200`
+
+**--logLevel (-l)** Logging level. Defaults to `info`.
+
+- Options: `error`, `warn`, `info`, `verbose`, `debug`, `silly`
+- Example: `--logLevel verbose`

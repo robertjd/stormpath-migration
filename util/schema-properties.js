@@ -32,7 +32,7 @@ function getSchemaProperty(key, schema) {
 
 function compareKeys(key1, key2) {
   const apiKey = 'stormpathApiKey_';
-  if (key1.indexOf(apiKey) === -1 || key2.indexOf(apiKey) === -1) {
+  if (!key1.includes(apiKey) || !key2.includes(apiKey)) {
     return key1 > key2 ? 1 : (key1 === key2 ? 0 : -1);
   }
   return Number(key1.replace(apiKey, '')) - Number(key2.replace(apiKey, ''));

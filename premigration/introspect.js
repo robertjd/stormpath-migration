@@ -14,12 +14,10 @@ function introspect() {
 
   const accounts = stormpathExport.getAccounts();
   for (let account of accounts) {
-    if (!config.excludeCustomData) {
-      const customData = account.getCustomData();
-      Object.keys(customData).forEach((key) => {
-        schemaProperties.add(key, customData[key].schema);
-      });
-    }
+    const customData = account.getCustomData();
+    Object.keys(customData).forEach((key) => {
+      schemaProperties.add(key, customData[key].schema);
+    });
   }
 
   return {

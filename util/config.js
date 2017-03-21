@@ -29,12 +29,12 @@ const config = yargs
       required: true,
       alias: 't'
     },
-    excludeCustomData: {
-      description: 'Skip importing of custom data from Stormpath Accounts.',
+    customData: {
+      description: 'Strategy for importing Account custom data',
       required: false,
-      type: 'boolean',
-      default: false,
-      alias: 'x'
+      alias: 'd',
+      choices: ['schema', 'stringify', 'exclude'],
+      default: 'schema'
     },
     concurrencyLimit: {
       description: 'Max number of concurrent requests to Okta',
@@ -58,5 +58,9 @@ const config = yargs
       return true;
   })
   .argv;
+
+config.isCustomDataSchema = config.customData === 'schema';
+config.isCustomDataStringify = config.customData === 'stringify';
+config.isCustomDataExclude = config.customData === 'exclude';
 
 module.exports = config;
