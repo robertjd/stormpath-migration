@@ -1,29 +1,14 @@
 const path = require('path');
 const fs = require('fs');
+const AccountLinks = require('./account-links');
 const Account = require('./account');
+const AccountStoreMapping = require('./account-store-mapping');
 const Base = require('./base');
+const Directory = require('./directory');
+const logger = require('../util/logger');
 const config = require('../util/config');
-
-/**
- * Returns a file iterator that will read the file and return the path and
- * file contents when traversed.
- * @param {String} dir
- * @param {Class} Klass
- * @returns {Iterator} {fullPath, json}
- */
-function* fileIterator(dir, Klass) {
-  const files = fs.readdirSync(dir, 'utf8');
-  let i = 0;
-  while(i < files.length) {
-    const file = files[i++];
-    if (path.extname(file) !== '.json') {
-      continue;
-    }
-    const fullPath = `${dir}/${file}`;
-    const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-    yield new Klass(fullPath, json);
-  }
-}
+const ConcurrencyPool = require('../util/concurrency-pool');
+const FileIterator = require('./file-iterator');
 
 class StormpathExport {
 
@@ -31,24 +16,63 @@ class StormpathExport {
     this.baseDir = config.stormPathBaseDir;
   }
 
-  getAccounts() {
-    return fileIterator(`${this.baseDir}/accounts`, Account);
+  async getAccountLinks() {
+    const accountLinks = new AccountLinks();
+    const linkFiles = new FileIterator(`${this.baseDir}/accountLinks`, Base);
+    await linkFiles.each((file) => accountLinks.addLink(file));
+    return accountLinks;
+  }
+
+  async getAccounts() {
+    const apiKeys = new FileIterator(`${this.baseDir}/apiKeys`, Base);
+    logger.verbose(`Mapping ${apiKeys.length} apiKeys to accounts`);
+    const accountApiKeys = await apiKeys.mapToObject((apiKey, map) => {
+      if (apiKey.status !== 'ENABLED') {
+        return;
+      }
+      const accountId = apiKey.account.id;
+      if (!map[accountId]) {
+        map[accountId] = [];
+      }
+      map[accountId].push({ id: apiKey.id, secret: apiKey.secret });
+    });
+    return new FileIterator(`${this.baseDir}/accounts`, Account, { accountApiKeys });
   }
 
   getDirectories() {
-    return fileIterator(`${this.baseDir}/directories`, Base);
+    return new FileIterator(`${this.baseDir}/directories`, Directory);
   }
 
   getApplications() {
-    return fileIterator(`${this.baseDir}/applications`, Base);
+    return new FileIterator(`${this.baseDir}/applications`, Base);
+  }
+
+  getAccountStoreMappings() {
+    return new FileIterator(`${this.baseDir}/accountStoreMappings`, AccountStoreMapping);
   }
 
   getGroups() {
-    return fileIterator(`${this.baseDir}/groups`, Base);
+    return new FileIterator(`${this.baseDir}/groups`, Base);
+  }
+
+  async getGroupMembershipMap() {
+    const memberships = new FileIterator(`${this.baseDir}/groupMemberships`, Base);
+    logger.verbose(`Mapping ${memberships.length} group memberships`);
+    return memberships.mapToObject((membership, map) => {
+      const groupId = membership.group.id;
+      if (!map[groupId]) {
+        map[groupId] = [];
+      }
+      map[groupId].push(membership.account.id);
+    });
   }
 
   getOrganizations() {
-    return fileIterator(`${this.baseDir}/organizations`, Base);
+    return new FileIterator(`${this.baseDir}/organizations`, Base);
+  }
+
+  getOrganizationAccountStoreMappings() {
+    return new FileIterator(`${this.baseDir}/organizationAccountStoreMappings`, AccountStoreMapping);
   }
 
 }

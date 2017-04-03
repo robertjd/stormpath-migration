@@ -1,5 +1,6 @@
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const ApiError = require('../util/api-error');
 
 const USERS_PATH = '/api/v1/users';
 
@@ -15,7 +16,7 @@ async function getExistingUser(profile) {
 }
 
 async function updateExistingUser(id, profile) {
-  logger.verbose(`Existing user found with login=${profile.login} id=${id}, updating`);
+  logger.verbose(`Updating existing user with login=${profile.login} id=${id}`);
   try {
     const user = await rs.post({
       url: `${USERS_PATH}/${id}`,
@@ -34,19 +35,21 @@ async function updateExistingUser(id, profile) {
     logger.updated(`User id=${id} login=${profile.login}`);
     return user;
   } catch (err) {
-    throw new Error(`Failed to update okta user login=${profile.login}: ${err}'`);
+    throw new ApiError(`Failed to update okta user id=${id} login=${profile.login}`, err);
   }
 }
 
 async function createNewUser(profile) {
-  logger.verbose(`No users found with login=${profile.login}`);
+  logger.verbose(`Creating user login=${profile.login}`);
   try {
     const user = await rs.post({
       url: USERS_PATH,
       body: {
         profile,
         credentials: {
-          password: 'TEMPORARY_password1234'
+          password: {
+            value: 'TEMPORARY_password1234'
+          }
         }
         //TODO: once REQ-1274 is finished
         //'credentials': {
@@ -61,20 +64,16 @@ async function createNewUser(profile) {
     logger.created(`User id=${user.id} login=${profile.login}`);
     return user;
   } catch (err) {
-    throw new Error(`Failed to create Okta user login=${profile.login}: ${err}`);
+    throw new ApiError(`Failed to create User login=${profile.login}`, err);
   }
 }
 
 async function createOktaUser(profile) {
-  logger.verbose(`Trying to create Okta user login=${profile.login}`);
-  try {
-    const user = await getExistingUser(profile);
-    return user
-      ? updateExistingUser(user.id, profile)
-      : createNewUser(profile);
-  } catch (err) {
-    logger.error(err);
-  }
+  logger.verbose(`Trying to create User login=${profile.login}`);
+  const user = await getExistingUser(profile);
+  return user
+    ? updateExistingUser(user.id, profile)
+    : createNewUser(profile);
 }
 
 module.exports = createOktaUser;
