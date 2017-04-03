@@ -37,10 +37,15 @@ const config = yargs
       default: 'schema'
     },
     concurrencyLimit: {
-      description: 'Max number of concurrent requests to Okta',
+      description: 'Max number of concurrent transactions',
       required: false,
       alias: 'c',
-      default: 100
+      default: 30
+    },
+    maxFiles: {
+      description: 'Max number of files to parse per directory. Use to preview the entire import.',
+      required: false,
+      alias: 'f'
     },
     logLevel: {
       description: 'Logging level',

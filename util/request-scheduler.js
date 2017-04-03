@@ -4,6 +4,12 @@ const Promise = require('bluebird');
 const rp = require('request-promise');
 const logger = require('../util/logger');
 const config = require('../util/config');
+const ConcurrencyPool = require('../util/concurrency-pool');
+
+// The max number of concurrent requests. Note, this is different from the
+// concurrencyLimit in the config, which defines the max number of concurrent
+// transactions (which can encompass more than one request).
+const REQUEST_CONCURRENCY_LIMIT = 100;
 
 /**
  * Calculates the time to schedule the next request in milliseconds - returns 0
@@ -15,20 +21,14 @@ const config = require('../util/config');
  * @param {Number} headers['x-rate-limit-reset']
  * @returns {Number} number of milliseconds to next available request
  */
-function timeToNextRequest(headers) {
-  const remaining = headers['x-rate-limit-remaining']
+function timeToNextRequest(res) {
+  const headers = res.headers || res.response.headers;
+  const remaining = Number(headers['x-rate-limit-remaining']);
 
-  // TODO: Errors don't return rate limit headers. Replace this with logic to:
-  // 1. Check if statusCode 429. Rate limited!
-  // 2. If error and not 429, make a request to /api/v1/users/me to check
-  //    current rate limit. Are we flying too close to the sun?
-  if (remaining === undefined) {
-    logger.debug('No rate-limit headers on error response, continuing');
-    return 0;
-  }
-
-  if (remaining > 0) {
-    logger.debug(`x-rate-limit-remaining ${remaining}`);
+  // Must be greater than the concurrency limit because there could be
+  // outstanding requests that have not finished. Add an extra 10 for buffer.
+  if (remaining > REQUEST_CONCURRENCY_LIMIT + 10) {
+    logger.silly(`x-rate-limit-remaining ${remaining}`);
     return 0;
   }
 
@@ -38,45 +38,10 @@ function timeToNextRequest(headers) {
   // Add an extra buffer of 1000ms
   const time = serverResetUtcMs - serverTimeUtcMs + 1000;
 
-  logger.debug(`Rate limit reached, scheduling next request in ${time}ms`);
+  const msg = `Rate limit reached, scheduling next request in ${time}ms ${remaining}`;
+  logger[remaining === 11 ? 'warn' : 'silly'](msg);
+
   return time;
-}
-
-/**
- * Executes the next request in the scheduler queue.
- * @param {RequestScheduler} scheduler
- */
-function execute(scheduler) {
-  if (scheduler.pending >= scheduler.concurrencyLimit) {
-    logger.debug(`${next.msg} [Concurrency limit ${scheduler.concurrencyLimit} reached, deferring]`);
-    return;
-  }
-
-  const next = scheduler.queue.shift();
-  if (!next) {
-    logger.debug('Queue empty');
-    return;
-  }
-
-  logger.debug(`${next.msg} [Requesting, ${scheduler.pending}]`);
-
-  scheduler.pending++;
-  const after = (type, res) => {
-    scheduler.pending--;
-    logger.debug(`${next.msg} [${type}, ${scheduler.pending}]`);
-    const headers = res.headers || res.response.headers;
-    setTimeout(() => execute(scheduler), timeToNextRequest(headers));
-  };
-
-  next.fn.call()
-  .then((res) => {
-    after('Success', res);
-    next.resolve(res.body);
-  })
-  .catch((err) => {
-    after('Failure', err);
-    next.reject(err);
-  });
 }
 
 /**
@@ -86,13 +51,21 @@ function execute(scheduler) {
  * @param {String} msg
  * @param {Function} fn
  */
-function schedule(scheduler, msg, fn) {
-  const promise = new Promise((resolve, reject) => {
-    logger.debug(`${msg} [Schedule]`);
-    scheduler.queue.push({ msg, fn, resolve, reject });
-  });
-  execute(scheduler);
-  return promise;
+async function schedule(scheduler, msg, fn) {
+  const requestId = scheduler.requestId++;
+  logger.silly(`Scheduling request id=${requestId}`, msg);
+  const resource = await scheduler.pool.acquire();
+  logger.silly(`Executing request id=${requestId}`);
+  try {
+    const res = await fn();
+    logger.silly(`Finished request id=${requestId} status=SUCCESS`);
+    setTimeout(resource.release, timeToNextRequest(res));
+    return res.body;
+  } catch (err) {
+    logger.silly(`Finished request id=${requestId} status=FAILURE`);
+    setTimeout(resource.release, timeToNextRequest(err));
+    throw err;
+  }
 }
 
 /**
@@ -104,9 +77,8 @@ class RequestScheduler {
 
   /** Constructor */
   constructor() {
-    this.concurrencyLimit = config.concurrencyLimit;
-    this.pending = 0;
-    this.queue = [];
+    this.requestId = 0;
+    this.pool = new ConcurrencyPool(REQUEST_CONCURRENCY_LIMIT);
     this.rp = rp.defaults({
       baseUrl: config.oktaBaseUrl,
       headers: {
