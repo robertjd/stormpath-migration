@@ -1,7 +1,8 @@
 class Base {
-  constructor(path, json, config) {
-    this.path = path;
-    this.json = json;
+  constructor(filePath, json, options) {
+    this.filePath = filePath;
+    Object.assign(this, json);
+    Object.assign(this, options);
   }
 }
 

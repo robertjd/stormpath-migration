@@ -21,36 +21,41 @@ function formatTime(time) {
     ':' + pad(date.getSeconds());
 }
 
+let indent = 0;
+
 const levels = {
   error: {
-    title: chalk.red.bold('ERROR  ')
+    title: chalk.red.bold('ERROR    ')
   },
   warn: {
-    title: chalk.bgBlack.yellow.bold('WARN   ')
+    title: chalk.bgBlack.yellow.bold('WARN     ')
   },
   exists: {
-    title: chalk.bold('EXISTS ')
+    title: chalk.bold('EXISTS   ')
   },
   updated: {
-    title: chalk.green.bold('UPDATED')
+    title: chalk.green.bold('UPDATED  ')
   },
   created: {
-    title: chalk.green.bold('CREATED')
+    title: chalk.green.bold('CREATED  ')
+  },
+  from: {
+    title: chalk.bold('FROM     '),
   },
   header: {
-    title: chalk.bold('START  ')
+    title: chalk.bold('START    ')
   },
   info: {
-    title: chalk.bold('INFO   ')
+    title: chalk.bold('INFO     ')
   },
   verbose: {
-    title: chalk.cyan.bold('VERBOSE')
+    title: chalk.cyan.bold('VERBOSE  ')
   },
   debug: {
-    title: chalk.magenta.bold('DEBUG  ')
+    title: chalk.magenta.bold('DEBUG    ')
   },
   silly: {
-    title: chalk.green.bold('SILLY  ')
+    title: chalk.green.bold('SILLY    ')
   }
 };
 
@@ -58,6 +63,7 @@ const levelMap = {};
 Object.keys(levels).forEach((key, i) => levelMap[key] = i);
 
 const logger = new (winston.Logger)({
+  exitOnError: false,
   levels: levelMap,
   transports: [
     new (winston.transports.Console)({
@@ -71,13 +77,19 @@ const logger = new (winston.Logger)({
         }
 
         const date = chalk.dim(`[${formatTime(options.timestamp())}]`);
-        const title = levels[level].title;
-        const message = options.message || '';
+        let title = levels[level].title;
+        for (i = 0; i < indent; i++) {
+          title += '  ';
+        }
+        if (indent > 0) {
+          title += '└─ ';
+        }
+        let message = options.message || '';
         const metaKeys = options.meta ? Object.keys(options.meta) : [];
 
         // No meta to output, just return the message
         if (metaKeys.length === 0) {
-          return `${date} ${title} ${message}`;
+          return `${date} ${title}${message}`;
         }
 
         let metaStr = '';
@@ -91,11 +103,9 @@ const logger = new (winston.Logger)({
         }
 
         // API errors
-        else if (options.meta.error) {
-          metaStr = prettyJson.render({
-            error: options.meta.error,
-            message: options.meta.message
-          });
+        else if (options.meta.name === 'ApiError') {
+          message = options.meta.message;
+          return `${date} ${title}${message}`;
         }
 
         // Other objects that are logged
@@ -103,7 +113,7 @@ const logger = new (winston.Logger)({
           metaStr = prettyJson.render(options.meta);
         }
 
-        return `${date} ${title} ${message}\n${prependSpaces(metaStr)}`;
+        return `${date} ${title}${message}\n${prependSpaces(metaStr)}`;
       }
     })
   ]
@@ -112,5 +122,13 @@ const logger = new (winston.Logger)({
 logger.setLevel = (level) => {
   logger.transports.console.level = level;
 };
+
+logger.group = (title) => {
+  logger.from(title);
+  indent++;
+  return {
+    end: () => indent--
+  };
+}
 
 module.exports = logger;

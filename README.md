@@ -106,9 +106,11 @@ node migrate.js --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://yo
 
 - Example: `--customData stringify`
 
-**--concurrencyLimit (-c)** Max number of concurrent requests to Okta. Defaults to `100`.
+**--concurrencyLimit (-c)** Max number of concurrent transactions. Defaults to `30`.
 
 - Example: `--concurrencyLimit 200`
+
+**--maxFiles (-f)** Max number of files to parse per directory. Use to preview the entire import.
 
 **--logLevel (-l)** Logging level. Defaults to `info`.
 
