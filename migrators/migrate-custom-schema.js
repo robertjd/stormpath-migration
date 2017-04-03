@@ -1,8 +1,8 @@
 const addCustomSchemaProperties = require('../functions/add-custom-schema-properties');
 const logger = require('../util/logger');
-const config = require('../util/config');
+const cache = require('./util/cache');
 
-async function migrateCustomSchema(cache) {
+async function migrateCustomSchema() {
   logger.header('Adding custom schema properties');
   return addCustomSchemaProperties(cache.customSchemaProperties);
 }

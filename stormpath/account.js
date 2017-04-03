@@ -1,3 +1,4 @@
+const fs = require('fs');
 const Base = require('./base');
 const logger = require('../util/logger');
 const config = require('../util/config');
@@ -49,17 +50,80 @@ function transform(original) {
   return { schema, val };
 }
 
+/**
+ * Sets default 'not_provided' value for required attributes
+ * @param {Object} profileAttributes
+ */
+function addRequiredAttributes(profile) {
+  const missing = [];
+  ['firstName', 'lastName'].forEach((attr) => {
+    if (!profile[attr]) {
+      profile[attr] = 'not_provided';
+      missing.push(attr);
+    }
+  });
+  if (missing.length > 0) {
+    const attrs = missing.join(',');
+    logger.warn(`Setting required attributes ${attrs} to 'not_provided' for email=${profile.email}`);
+  }
+  return profile;
+}
+
 class Account extends Base {
 
+  constructor(filePath, json, options) {
+    super(filePath, json);
+    this.apiKeys = options.accountApiKeys[this.id] || [];
+    this.accountIds = [this.id];
+    this.directoryIds = [this.directory.id];
+  }
+
+  /**
+   * Merges properties from another account into this account.
+   * @param {Account} account
+   */
+  merge(account) {
+    // 1. Base stormpath properties - only overrides properties that aren't already set
+    const mergeableProperties = [
+      'username',
+      'givenName',
+      'middleName',
+      'surName',
+      'fullName'
+    ];
+    mergeableProperties.forEach((prop) => {
+      if (!this[prop]) {
+        this[prop] = account[prop];
+      }
+    });
+
+    // 2. Custom data properties - only overrides properties that aren't already set
+    Object.keys(account.customData).forEach((key) => {
+      if (!this.customData[key]) {
+        this.customData[key] = account.customData[key];
+      }
+    });
+
+    // 3. ApiKeys - merges both apiKeys together
+    this.apiKeys = this.apiKeys.concat(account.apiKeys);
+
+    // 4. Keep a record of which accounts have been merged
+    this.accountIds.push(account.id);
+    this.directoryIds.push(account.directory.id);
+  }
+
   getProfileAttributes() {
-    const profileAttributes = {
-      login: this.json.username,
-      email: this.json.email,
-      firstName: this.json.givenName,
-      middleName: this.json.middleName,
-      lastName: this.json.surname,
-      displayName: this.json.fullName
-    };
+    // Note: firstName and lastName are required attributes. If these are not
+    // available, default to "not_provided"
+    const profileAttributes = addRequiredAttributes({
+      login: this.username,
+      email: this.email,
+      firstName: this.givenName,
+      middleName: this.middleName,
+      lastName: this.surname,
+      displayName: this.fullName
+    });
+
     const customData = this.getCustomData();
     Object.keys(customData).forEach((key) => {
       profileAttributes[key] = customData[key].val;
@@ -71,34 +135,43 @@ class Account extends Base {
     const customData = {};
 
     if (config.isCustomDataStringify) {
-      customData['customData'] = transform(JSON.stringify(this.json.customData));
+      customData['customData'] = transform(JSON.stringify(this.customData));
     }
     else if (config.isCustomDataSchema) {
      const skip = ['createdAt', 'modifiedAt', 'href'];
-     const keys = Object.keys(this.json.customData).filter(key => skip.indexOf(key) === -1);
+     const keys = Object.keys(this.customData).filter(key => skip.indexOf(key) === -1);
      keys.forEach((key) => {
         // We store apiKeys/secrets under the stormpathApiKey_ namespace, throw
         // an error if they try to create a custom property with this key
         if (key.indexOf('stormpathApiKey_') === 0) {
           throw new Error(`${key} is a reserved property name`);
         }
-        customData[key] = transform(this.json.customData[key]);
+        customData[key] = transform(this.customData[key]);
       });
     }
 
     // Add apiKeys to custom data with the special keys stormpathApiKey_*
-    this.json.apiKeys.forEach((key, i) => {
+    this.apiKeys.forEach((key, i) => {
       if (i < 10) {
         customData[`stormpathApiKey_${i+1}`] = transform(`${key.id}:${key.secret}`);
       }
     });
-    const numApiKeys = this.json.apiKeys.length;
+    const numApiKeys = this.apiKeys.length;
     if (numApiKeys > 10) {
-      logger.warn(`Account id=${this.json.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys.`);
+      logger.warn(`Account id=${this.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys.`);
     }
 
     return customData;
   }
+
+  setOktaUserId(oktaUserId) {
+    this.oktaUserId = oktaUserId;
+  }
+
+  getOktaUserId() {
+    return this.oktaUserId;
+  }
+
 }
 
 module.exports = Account;
