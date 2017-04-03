@@ -64,6 +64,8 @@ async function deleteUsers() {
         logger.error(new ApiError(`Error deleting user id=${user.id} login=${user.profile.login}`, err));
       }
     });
+    // Default (and max) limit for number of users returned is 200. If we have
+    // less than 200, it means we've got the last set.
     if (users.length < 200) {
       break;
     }

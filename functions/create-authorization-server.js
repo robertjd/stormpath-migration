@@ -1,5 +1,6 @@
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const ApiError = require('../util/api-error');
 
 const AS_PATH = '/api/v1/as';
 
@@ -14,7 +15,7 @@ async function getExistingAuthorizationServer(name) {
     });
     return authorizationServers.find(as => as.name === name);
   } catch (err) {
-    throw new Error(`Failed to get authorization servers: ${err}`);
+    throw new ApiError(`Failed to get authorization servers`, err);
   }
 }
 
@@ -23,13 +24,14 @@ async function updateExistingAuthorizationServer(as) {
   return as;
 }
 
-async function createNewAuthorizationServer(name, defaultResourceUri) {
-  logger.verbose(`No authorization servers found with name=${name}`);
+async function createNewAuthorizationServer(name, description, defaultResourceUri) {
+  logger.verbose(`Creating authorization server with name=${name}`);
   try {
     const as = await rs.post({
       url: AS_PATH,
       body: {
         name,
+        description,
         defaultResourceUri,
       }
     });
@@ -40,12 +42,12 @@ async function createNewAuthorizationServer(name, defaultResourceUri) {
   }
 }
 
-async function createAuthorizationServer(name, defaultResourceUri) {
-  logger.verbose(`Trying to create authorization server`);
+async function createAuthorizationServer(name, description, defaultResourceUri) {
+  logger.verbose(`Trying to create authorization server name=${name}`);
   const as = await getExistingAuthorizationServer(name);
   return as
     ? updateExistingAuthorizationServer(as)
-    : createNewAuthorizationServer(name, defaultResourceUri);
+    : createNewAuthorizationServer(name, description, defaultResourceUri);
 }
 
 module.exports = createAuthorizationServer;

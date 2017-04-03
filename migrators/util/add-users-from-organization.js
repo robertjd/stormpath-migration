@@ -25,7 +25,7 @@ async function getOrganizationAccountStoreMap() {
     if (!map[orgId]) {
       map[orgId] = [];
     }
-    if (userIds && userIds.length > 0) {
+    if (Array.isArray(userIds) && userIds.length > 0) {
       map[orgId] = map[orgId].concat(userIds);
     }
   }, { limit: config.concurrencyLimit });

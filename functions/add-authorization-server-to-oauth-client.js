@@ -1,5 +1,6 @@
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const ApiError = require('../util/api-error');
 
 const APPS_PATH = '/api/v1/apps';
 
@@ -9,12 +10,13 @@ function getAppIdFromClient(client) {
 }
 
 async function addAuthorizationServerToOAuthClient(as, client) {
-  logger.verbose(`Trying to add authorization server to OAuth Client app as_id=${as.id} client_id=${client.client_id}`);
+  const details = `Authorization Server id=${as.id} to OAuth Client client_id=${client.client_id}`;
+  logger.verbose(`Trying to add ${details}`);
   try {
     const appId = getAppIdFromClient(client);
     const app = await rs.get(`${APPS_PATH}/${appId}`);
     if (app.settings.notifications.vpn.message === as.id) {
-      logger.exists(`Authorization server is already mapped to OAuth Client app as_id=${as.id} client_id=${client.client_id}`);
+      logger.exists(details);
       return;
     }
     logger.verbose('No map, creating');
@@ -23,9 +25,9 @@ async function addAuthorizationServerToOAuthClient(as, client) {
       url: `${APPS_PATH}/${appId}`,
       body: app
     });
-    logger.created(`Mapping between Authorization Server and OAuth Client app as_id=${as.id} client_id=${client.client_id}`);
+    logger.created(details);
   } catch (err) {
-    logger.error(err);
+    throw new ApiError(`Failed to map ${details}`, err);
   }
 }
 
