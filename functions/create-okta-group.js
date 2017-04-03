@@ -1,10 +1,11 @@
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const APiError = require('../util/api-error');
 
 const GROUPS_PATH = '/api/v1/groups';
 
 async function getExistingGroup(name) {
-  logger.verbose(`Getting existing group name=${name}`);
+  logger.verbose(`Getting existing Okta group name=${name}`);
   const groups = await rs.get({
     url: GROUPS_PATH,
     qs: {
@@ -22,8 +23,8 @@ async function updateExistingGroup(group, description) {
   logger.verbose(`Existing group found with name '${group.profile.name}' id=${group.id}`);
 
   if (description === group.profile.description) {
-    logger.exists(`Found matching Group id=${group.id} name=${group.profile.name}`);
-    return;
+    logger.exists(`Found matching Okta group id=${group.id} name=${group.profile.name}`);
+    return group;
   }
 
   try {
@@ -36,15 +37,15 @@ async function updateExistingGroup(group, description) {
         }
       }
     });
-    logger.updated(`Group id=${group.id} name=${group.profile.name}`);
+    logger.updated(`Okta group id=${group.id} name=${group.profile.name}`);
     return group;
   } catch (err) {
-    throw new Error(`Failed to update okta group name=${group.profile.name} id=${group.id}: ${err}`);
+    throw new ApiError(`Failed to update Okta group name=${group.profile.name} id=${group.id}`, err);
   }
 }
 
 async function createNewGroup(name, description) {
-  logger.verbose(`No groups found with name=${name}`);
+  logger.verbose(`No Okta groups found with name=${name}`);
   try {
     const group = await rs.post({
       url: GROUPS_PATH,
@@ -55,23 +56,19 @@ async function createNewGroup(name, description) {
         }
       }
     });
-    logger.created(`Group id=${group.id} name=${name}`);
+    logger.created(`Okta group id=${group.id} name=${name}`);
     return group;
   } catch (err) {
-    throw new Error(`Failed to create Group name=${name}: ${err}`);
+    throw new ApiError(`Failed to create Okta group name=${name}`, err);
   }
 }
 
 async function createOktaGroup(name, description) {
-  logger.verbose(`Trying to create okta group ${name}`);
-  try {
-    const group = await getExistingGroup(name);
-    return group
-      ? updateExistingGroup(group, description)
-      : createNewGroup(name, description);
-  } catch (err) {
-    logger.error(err);
-  }
+  logger.verbose(`Trying to create Okta group name=${name}`);
+  const group = await getExistingGroup(name);
+  return group
+    ? updateExistingGroup(group, description)
+    : createNewGroup(name, description);
 }
 
 module.exports = createOktaGroup;
