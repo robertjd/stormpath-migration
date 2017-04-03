@@ -1,5 +1,6 @@
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const ApiError = require('../util/api-error');
 
 const CLIENTS_PATH = '/oauth2/v1/clients';
 
@@ -26,36 +27,31 @@ async function updateOAuthClient(client) {
 async function createNewOAuthClient(name) {
   logger.verbose(`No OAuth clients found with client_name=${name}`);
   try {
-    // Question: Is it possible to create a client without specifying
-    // redirect_uris, or asking for implicit/code flows? Do we need these?
     const client = await rs.post({
       url: CLIENTS_PATH,
       body: {
-        'client_name': name,
-        'response_types': [
-          'code',
-          'token',
-          'id_token'
-        ],
-        'grant_types': [
+        client_name: name,
+        response_types: ['code', 'token', 'id_token'],
+        grant_types: [
           'authorization_code',
           'implicit',
           'password',
           'refresh_token'
         ],
-        'redirect_uris': ['https://www.okta.com/redirect-not-provided'],
-        'token_endpoint_auth_method': 'client_secret_basic',
-        'application_type': 'web'
+        redirect_uris: ['https://www.okta.com/redirect-not-provided'],
+        token_endpoint_auth_method: 'client_secret_basic',
+        application_type: 'web'
       }
     });
     logger.created(`OAuth Client client_id=${client.client_id} client_name=${name}`);
     return client;
   } catch (err) {
-    throw new Error(`Failed to create OAuth Client client_name=${name}: ${err}`);
+    throw new ApiError(`Failed to create OAuth Client client_name=${name}`, err);
   }
 }
 
 async function createOAuthClient(name) {
+  logger.verbose(`Trying to create oauth client name=${name}`);
   const client = await getOAuthClient(name);
   return client ? updateOAuthClient(client) : createNewOAuthClient(name);
 }
