@@ -33,7 +33,12 @@ async function deleteCustomSchema() {
   for (let prop of props) {
     options.body.definitions.custom.properties[prop] = null;
   }
-  return rs.post(options);
+  try {
+    await rs.post(options);
+    logger.info(`Deleted ${props.length} custom properties`);
+  } catch (err) {
+    logger.error(new ApiError(`Error deleting custom properties`, err));
+  }
 }
 
 async function deleteGroups() {
@@ -45,8 +50,12 @@ async function deleteGroups() {
       logger.info(`Skipping group id=${group.id} name=${group.profile.name}`);
       return;
     }
-    await rs.delete(`/api/v1/groups/${group.id}`);
-    logger.info(`Deleted group id=${group.id} name=${group.profile.name}`);
+    try {
+      await rs.delete(`/api/v1/groups/${group.id}`);
+      logger.info(`Deleted group id=${group.id} name=${group.profile.name}`);
+    } catch (err) {
+      logger.error(new ApiError(`Error deleting group id=${group.id} name=${group.profile.name}`, err));
+    }
   });
 }
 
@@ -97,8 +106,12 @@ async function deleteClients() {
   const clients = await rs.get('/oauth2/v1/clients');
   logger.info(`Found ${clients.length} clients`);
   return pool.each(clients, async (client) => {
-    await rs.delete(`/oauth2/v1/clients/${client.client_id}`);
-    logger.info(`Deleted client id=${client.client_id} name=${client.client_name}`);
+    try {
+      await rs.delete(`/oauth2/v1/clients/${client.client_id}`);
+      logger.info(`Deleted client id=${client.client_id} name=${client.client_name}`);
+    } catch (err) {
+      logger.error(new ApiError(`Error deleting OAuth client id=${client.client_id} name=${client.client_name}`, err));
+    }
   });
 }
 
@@ -107,8 +120,12 @@ async function deleteAuthorizationServers() {
   const servers = await rs.get('/api/v1/as');
   logger.info(`Found ${servers.length} authorization servers`);
   return pool.each(servers, async (as) => {
-    await rs.delete(`/api/v1/as/${as.id}`);
-    logger.info(`Deleted authorization server id=${as.id} name=${as.name}`);
+    try {
+      await rs.delete(`/api/v1/as/${as.id}`);
+      logger.info(`Deleted authorization server id=${as.id} name=${as.name}`);
+    } catch (err) {
+      logger.error(new ApiError(`Error deleting authorization server id=${as.id} name=${as.name}`, err));
+    }
   });
 }
 
@@ -137,8 +154,12 @@ async function deleteIdps() {
   const idps = await rs.get('/api/v1/idps');
   logger.info(`Found ${idps.length} IDPs`);
   return pool.each(idps, async (idp) => {
-    await rs.delete(`/api/v1/idps/${idp.id}`);
-    logger.info(`Deleted IDP id=${idp.id} name=${idp.name} type=${idp.type}`);
+    try {
+      await rs.delete(`/api/v1/idps/${idp.id}`);
+      logger.info(`Deleted IDP id=${idp.id} name=${idp.name} type=${idp.type}`);
+    } catch (err) {
+      logger.error(new ApiError(`Error deleting IDP id=${idp.id} name=${idp.name}`, err));
+    }
   });
 }
 
@@ -147,8 +168,12 @@ async function deleteIdpKeys() {
   const keys = await rs.get('/api/v1/idps/credentials/keys');
   logger.info(`Found ${keys.length} keys`);
   return pool.each(keys, async (key) => {
-    await rs.delete(`/api/v1/idps/credentials/keys/${key.kid}`);
-    logger.info(`Deleted IDP cert key kid=${key.kid}`);
+    try {
+      await rs.delete(`/api/v1/idps/credentials/keys/${key.kid}`);
+      logger.info(`Deleted IDP cert key kid=${key.kid}`);
+    } catch (err) {
+      logger.error(new ApiError(`Error deleting IDP cert key kid=${key.kid}`, err));
+    }
   });
 }
 
