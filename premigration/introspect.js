@@ -48,7 +48,7 @@ async function introspect() {
       if (unifiedAccount) {
         const customData = unifiedAccount.getCustomData();
         Object.keys(customData).forEach((key) => {
-          schemaProperties.add(key, customData[key].schema);
+          schemaProperties.add(key, customData[key].type);
         });
       }
     } catch (err) {
@@ -64,7 +64,11 @@ async function introspect() {
   }
 
   cache.unifiedAccounts = unifiedAccounts;
-  cache.customSchemaProperties = schemaProperties.getProperties();
+
+  const schema = schemaProperties.getSchema();
+  cache.customSchemaProperties = schema.properties;
+  cache.customSchemaTypeMap = schema.schemaTypeMap;
+
   logger.info(`Found ${Object.keys(cache.customSchemaProperties).length} custom schema properties`);
 }
 

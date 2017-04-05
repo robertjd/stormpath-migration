@@ -2,6 +2,7 @@ module.exports = {
 
   unifiedAccounts: null,
   customSchemaProperties: null,
+  customSchemaTypeMap: null,
 
   // Stormpath applicationId -> [Okta groupIds]
   accountStoreMap: null,
