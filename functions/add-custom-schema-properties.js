@@ -1,6 +1,7 @@
 const util = require('util');
 const logger = require('../util/logger');
 const rs = require('../util/request-scheduler');
+const ApiError = require('../util/api-error');
 
 const SCHEMA_PATH = '/api/v1/meta/schemas/user/default';
 
@@ -19,26 +20,30 @@ async function getCurrentProperties() {
 
 async function createProperties(properties) {
   logger.verbose('Found new custom schema properties, adding', properties);
-  await rs.post({
-    url: SCHEMA_PATH,
-    body: {
-      definitions: {
-        custom: {
-          id: '#custom',
-          type: 'object',
-          properties,
-          required: []
+  try {
+    await rs.post({
+      url: SCHEMA_PATH,
+      body: {
+        definitions: {
+          custom: {
+            id: '#custom',
+            type: 'object',
+            properties,
+            required: []
+          }
         }
       }
-    }
-  });
-  logger.created(`Custom schema properties`, Object.keys(properties).map((key, index) => {
-    const property = properties[key];
-    const type = property.type === 'array'
-      ? `${property.items.type} ${property.type}`
-      : property.type;
-    return { index, property: property.title, type };
-  }));
+    });
+    logger.created(`Custom schema properties`, Object.keys(properties).map((key, index) => {
+      const property = properties[key];
+      const type = property.type === 'array'
+        ? `${property.items.type} ${property.type}`
+        : property.type;
+      return { index, property: property.title, type };
+    }));
+  } catch (err) {
+    throw new ApiError(`Failed to create new custom schema properties`, err);
+  }
 }
 
 async function addCustomSchemaProperties(customProperties) {
@@ -76,7 +81,8 @@ async function addCustomSchemaProperties(customProperties) {
   } catch (err) {
     // Errors when creating custom schema properties are unrecoverable - if
     // this happens, stop the script
-    logger.error('Failed to add custom schema properties, aborting script', err);
+    logger.error(err);
+    logger.error('Failed to add custom schema properties, aborting script');
     process.exit(1);
   }
 }

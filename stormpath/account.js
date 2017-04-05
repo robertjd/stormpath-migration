@@ -2,52 +2,80 @@ const fs = require('fs');
 const Base = require('./base');
 const logger = require('../util/logger');
 const config = require('../util/config');
+const cache = require('../migrators/util/cache');
+
+/**
+ * Flattens custom data object, i.e:
+ *   {
+ *     address: {
+ *       number: 5
+ *       street: 'Brannan St.'
+ *     }
+ *   }
+ * Becomes:
+ *   {
+ *     address_number: 5,
+ *     address_street: 'Brannan St'
+ *   }
+ */
+function flattenCustomData(customData, prefix = '') {
+  const keys = Object.keys(customData);
+  const prefixStr = prefix === '' ? '' : `${prefix}_`;
+  const flattened = {};
+  for (let key of keys) {
+    const val = customData[key];
+    if (!!val && !Array.isArray(val) && typeof val === 'object') {
+      const nested = flattenCustomData(val, `${prefixStr}${key}`);
+      Object.assign(flattened, nested);
+    }
+    else {
+      flattened[`${prefixStr}${key}`] = val;
+    }
+  }
+  return flattened;
+}
 
 /**
  * Transforms custom data value to an object with:
- *   schema:
- *     type: array, boolean, number, string
- *     itemType: string, number
+ *   type: array-number, array-string, boolean, number, string
  *   val: coerced value
- * If the type is an object, stringifies the object and stores as a string. If
- * the type is an array, will also include the item type - string or number.
+ * If the type is an object, stringifies the object and stores as a string.
  * @param {*} val custom data value
- * @return {Object} type, val, itemType
+ * @return {Object} type, val
  */
 function transform(original) {
-  const schema = {};
+  let type;
   let val;
 
   if (Array.isArray(original)) {
-    schema.type = 'array';
     // There are three array types - string, number, and integer. If the array
     // is empty, or its first value is anything other than a number, use
     // the string array.
-    schema.itemType = original.length > 0 && typeof original[0] === 'number'
-      ? 'number'
-      : 'string';
+    type = original.length > 0 && typeof original[0] === 'number'
+      ? 'array-number'
+      : 'array-string';
     val = original.map((item) => {
-      return schema.itemType === 'string' ? JSON.stringify(item) : item;
+      return type === 'array-string' ? JSON.stringify(item) : item;
     });
   }
   else if (typeof original === 'boolean') {
-    schema.type = 'boolean';
+    type = 'boolean';
     val = original;
   }
   else if (typeof original === 'number') {
-    schema.type = 'number';
+    type = 'number';
     val = original;
   }
   else if (typeof original === 'string') {
-    schema.type = 'string';
+    type = 'string';
     val = original;
   }
   else {
-    schema.type = 'string';
+    type = 'string';
     val = JSON.stringify(original);
   }
 
-  return { schema, val };
+  return { type, val };
 }
 
 /**
@@ -125,9 +153,22 @@ class Account extends Base {
     });
 
     const customData = this.getCustomData();
+    const invalid = [];
     Object.keys(customData).forEach((key) => {
-      profileAttributes[key] = customData[key].val;
+      const property = customData[key];
+      const schemaType = cache.customSchemaTypeMap[key];
+      if (property.type !== schemaType) {
+        invalid.push({ property: key, type: property.type, expected: schemaType });
+      }
+      else {
+        profileAttributes[key] = customData[key].val;
+      }
     });
+
+    if (invalid.length > 0) {
+      logger.warn(`Account ids=${this.accountIds} contain customData that does not match the expected schema types - removing`, invalid);
+    }
+
     return profileAttributes;
   }
 
@@ -138,16 +179,17 @@ class Account extends Base {
       customData['customData'] = transform(JSON.stringify(this.customData));
     }
     else if (config.isCustomDataSchema) {
-     const skip = ['createdAt', 'modifiedAt', 'href'];
-     const keys = Object.keys(this.customData).filter(key => skip.indexOf(key) === -1);
-     keys.forEach((key) => {
+      const skip = ['createdAt', 'modifiedAt', 'href', 'id'];
+      const flattened = flattenCustomData(this.customData);
+      const keys = Object.keys(flattened).filter(key => !skip.includes(key));
+      for (let key of keys) {
         // We store apiKeys/secrets under the stormpathApiKey_ namespace, throw
         // an error if they try to create a custom property with this key
         if (key.indexOf('stormpathApiKey_') === 0) {
           throw new Error(`${key} is a reserved property name`);
         }
         customData[key] = transform(this.customData[key]);
-      });
+      }
     }
 
     // Add apiKeys to custom data with the special keys stormpathApiKey_*

@@ -1,31 +1,38 @@
-function getSchemaProperty(key, schema) {
+const logger = require('./logger');
+
+function getSchemaProperty(key, type) {
   const property = {
-    key: key,
-    val: {
-      title: key,
-      description: key,
-      type: schema.type,
-      scope: 'SYSTEM',
-      required: false,
-      permissions: [{
-        principal: 'SELF',
-        action: 'READ_WRITE'
-      }]
-    }
+    title: key,
+    description: key,
+    type,
+    scope: 'SYSTEM',
+    required: false,
+    permissions: [{
+      principal: 'SELF',
+      action: 'READ_WRITE'
+    }]
   };
-  switch (schema.type) {
-  case 'array':
-    property.val.items = { type: schema.itemType };
-    property.val.union = 'DISABLE';
+  switch (type) {
+  case 'array-string':
+    property.type = 'array';
+    property.items = { type: 'string' };
+    property.union = 'DISABLE';
+    break;
+  case 'array-number':
+    property.type = 'array';
+    property.items = { type: 'number' };
+    property.union = 'DISABLE';
     break;
   case 'boolean':
     break;
   case 'number':
     break;
   case 'string':
-    property.val.minLength = 1;
-    property.val.maxLength = 10000;
+    property.minLength = 1;
+    property.maxLength = 10000;
     break;
+  default:
+    throw new Error(`Unknown schema type: ${type}`);
   }
   return property;
 }
@@ -44,33 +51,49 @@ class SchemaProperties {
     this.properties = {};
   }
 
-  add(key, schema) {
-    // If the property doesn't exist yet, add it
+  add(key, type) {
     if (!this.properties[key]) {
-      this.properties[key] = schema;
+      this.properties[key] = {};
     }
-
-    // Validate that new properties share the same schema as properties that
-    // have already been added.
-    const existing = this.properties[key];
-    if (schema.type !== existing.type) {
-      throw new Error(`Type mismatch for ${key} - expected ${existing.type}, but got ${schema.type}`);
+    if (!this.properties[key][type]) {
+      this.properties[key][type] = 0;
     }
-    if (schema.itemType !== existing.itemType) {
-      throw new Error(`ItemType mismatch for ${key} - expected ${existing.itemType}, but got ${schema.itemType}`);
-    }
+    this.properties[key][type]++;
   }
 
   /**
-   * @returns {Object} Object of User Profile Schema Properties
+   * @returns {Object} { properties, schemaTypeMap }
    */
-  getProperties() {
+  getSchema() {
     const properties = {};
+    const schemaTypeMap = {};
+
     Object.keys(this.properties).sort(compareKeys).forEach((key) => {
-      const property = getSchemaProperty(key, this.properties[key]);
-      properties[property.key] = property.val;
+      const typeCountMap = this.properties[key];
+      const types = Object.keys(typeCountMap);
+
+      let pairs = [];
+      let maxType;
+      let maxCount = -1;
+      for (let type of types) {
+        const count = typeCountMap[type];
+        pairs.push(`${type} (${count})`);
+        if (count > maxCount) {
+          maxCount = count;
+          maxType = type;
+        }
+      }
+
+      if (types.length > 1) {
+        const msg = `Found multiple types for custom schema property '${key}' - ${pairs.join(' ')}.`;
+        logger.warn(`${msg} Using the most common: ${maxType}.`);
+      }
+
+      schemaTypeMap[key] = maxType;
+      properties[key] = getSchemaProperty(key, maxType);
     });
-    return properties;
+
+    return { properties, schemaTypeMap };
   }
 
 }
