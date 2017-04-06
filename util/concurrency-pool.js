@@ -1,4 +1,4 @@
-const logger = require('./logger');
+const allSettled = require('./all-settled');
 
 function releaseFrom(pool) {
   return function () {
@@ -6,7 +6,7 @@ function releaseFrom(pool) {
       pool.numActive--;
       return;
     }
-    pool.pending.shift().call();
+    pool.pending.shift().resolve();
   };
 }
 
@@ -26,19 +26,32 @@ class ConcurrencyPool {
       return Promise.resolve(resource);
     }
 
-    let outerResolve;
-    const promise = new Promise(resolve => outerResolve = resolve);
-    this.pending.push(() => outerResolve(resource));
+    let resolve, reject;
+    const promise = new Promise((innerResolve, innerReject) => {
+      resolve = innerResolve;
+      reject = innerReject;
+    });
+    this.pending.push({
+      resolve: () => resolve(resource),
+      reject
+    });
     return promise;
   }
 
-  each(list, fn) {
-    return Promise.all(list.map(async (item) => {
+  async each(list, fn) {
+    const promises = list.map(async (item) => {
       const resource = await this.acquire();
       const res = await fn(item);
       resource.release();
       return res;
-    }));
+    });
+    try {
+      return await Promise.all(promises);
+    } catch (err) {
+      this.pending.forEach(item => item.reject());
+      await allSettled(promises);
+      throw new Error(err);
+    }
   }
 
   async mapToObject(list, fn) {

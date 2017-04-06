@@ -61,10 +61,14 @@ async function getPasswordPolicy(name) {
   logger.verbose(`Getting existing passwordPolicy name=${name}`);
   if (!passwordPolicies) {
     logger.verbose('Getting and caching all existing password policies');
-    const policies = await rs.get(`${POLICY_PATH}?type=PASSWORD`);
-    passwordPolicies = {};
-    for (let policy of policies) {
-      passwordPolicies[policy.name] = policy;
+    try {
+      const policies = await rs.get(`${POLICY_PATH}?type=PASSWORD`);
+      passwordPolicies = {};
+      for (let policy of policies) {
+        passwordPolicies[policy.name] = policy;
+      }
+    } catch (err) {
+      throw new ApiError(`Failed to get existing password policies name=${name}`, err);
     }
   }
   return passwordPolicies[name];

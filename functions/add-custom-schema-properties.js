@@ -7,15 +7,19 @@ const SCHEMA_PATH = '/api/v1/meta/schemas/user/default';
 
 async function getCurrentProperties() {
   logger.verbose('Getting current schema properties');
-  const res = await rs.get(SCHEMA_PATH);
+  try {
+    const res = await rs.get(SCHEMA_PATH);
 
-  // Note: Base properties are also unique, so we must not try to add a
-  // custom property with the same name.
-  const baseProperties = res.definitions.base.properties;
-  const customProperties = res.definitions.custom.properties;
-  const allProperties = Object.assign({}, baseProperties, customProperties);
-  logger.silly('Current Okta schema properties', allProperties);
-  return allProperties;
+    // Note: Base properties are also unique, so we must not try to add a
+    // custom property with the same name.
+    const baseProperties = res.definitions.base.properties;
+    const customProperties = res.definitions.custom.properties;
+    const allProperties = Object.assign({}, baseProperties, customProperties);
+    logger.silly('Current Okta schema properties', allProperties);
+    return allProperties;
+  } catch (err) {
+    throw new ApiError('Failed to get current schema properties', err);
+  }
 }
 
 async function createProperties(properties) {

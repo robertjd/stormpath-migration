@@ -2,6 +2,7 @@ const winston = require('winston');
 const chalk = require('chalk');
 const prettyJson = require('prettyjson');
 const columnify = require('columnify');
+const ApiError = require('./api-error');
 
 function prependSpaces(str) {
   return str.replace(/\n/g, '\n  ');
@@ -19,6 +20,51 @@ function formatTime(time) {
     ' ' + pad(date.getHours()) +
     ':' + pad(date.getMinutes()) +
     ':' + pad(date.getSeconds());
+}
+
+function formatHeader(header) {
+  return `\n${chalk.underline(header.toUpperCase())}:`;
+}
+
+function formatLine(title, options) {
+  const date = chalk.dim(`[${formatTime(options.timestamp())}]`);
+  let message = options.message || '';
+
+  // API Errors
+  if (options.meta && options.meta.name === 'ApiError') {
+    message = options.meta.message;
+    options.meta = {};
+  }
+
+  // Unhandled API Errors - fail gracefully
+  else if (options.meta && options.meta.error) {
+    const error = new ApiError('Failed to make request', options.meta);
+    message = error.message;
+    options.meta = {};
+  }
+
+  // No meta to output, just return the message
+  const metaKeys = options.meta ? Object.keys(options.meta) : [];
+  if (metaKeys.length === 0) {
+    return `${date} ${title}${message}`;
+  }
+
+  let metaStr = '';
+  // An "array" - winston converts this to an object. For arrays, output
+  // in columns (i.e. custom schema properties)
+  if (options.meta['0']) {
+    const arr = metaKeys.map(key => options.meta[key]);
+    metaStr = columnify(arr, {
+      columnSplitter: '  '
+    });
+  }
+
+  // Other objects that are logged
+  else {
+    metaStr = prettyJson.render(options.meta);
+  }
+
+  return `${date} ${title}${message}\n${prependSpaces(metaStr)}`;
 }
 
 let indent = 0;
@@ -73,10 +119,9 @@ const logger = new (winston.Logger)({
         // Header is a special line that breaks up the log output
         const level = options.level;
         if (level === 'header') {
-          return `\n${chalk.underline(options.message.toUpperCase())}:`;
+          return formatHeader(options.message);
         }
 
-        const date = chalk.dim(`[${formatTime(options.timestamp())}]`);
         let title = levels[level].title;
         for (i = 0; i < indent; i++) {
           title += '  ';
@@ -84,36 +129,7 @@ const logger = new (winston.Logger)({
         if (indent > 0) {
           title += '└─ ';
         }
-        let message = options.message || '';
-        const metaKeys = options.meta ? Object.keys(options.meta) : [];
-
-        // No meta to output, just return the message
-        if (metaKeys.length === 0) {
-          return `${date} ${title}${message}`;
-        }
-
-        let metaStr = '';
-        // An "array" - winston converts this to an object. For arrays, output
-        // in columns (i.e. custom schema properties)
-        if (options.meta['0']) {
-          const arr = metaKeys.map(key => options.meta[key]);
-          metaStr = columnify(arr, {
-            columnSplitter: '  '
-          });
-        }
-
-        // API errors
-        else if (options.meta.name === 'ApiError') {
-          message = options.meta.message;
-          return `${date} ${title}${message}`;
-        }
-
-        // Other objects that are logged
-        else {
-          metaStr = prettyJson.render(options.meta);
-        }
-
-        return `${date} ${title}${message}\n${prependSpaces(metaStr)}`;
+        return formatLine(title, options);
       }
     })
   ]
