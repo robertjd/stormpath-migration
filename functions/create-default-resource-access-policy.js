@@ -16,13 +16,17 @@ async function getDefaultResource(as) {
 
 async function getDefaultPolicy(as, resource) {
   logger.verbose(`Getting default policy for asId=${as.id} resourceId=${resource.id}`);
-  const policies = await rs.get({
-    url: `/api/v1/as/${as.id}/resources/${resource.id}/policies`,
-    query: {
-      type: 'OAUTH_AUTHORIZATION_POLICY'
-    }
-  });
-  return policies.find(policy => policy.name === 'Default Policy');
+  try {
+    const policies = await rs.get({
+      url: `/api/v1/as/${as.id}/resources/${resource.id}/policies`,
+      query: {
+        type: 'OAUTH_AUTHORIZATION_POLICY'
+      }
+    });
+    return policies.find(policy => policy.name === 'Default Policy');
+  } catch (err) {
+    throw new ApiError(`Failed to get default policy for asId=${as.id} resourceId=${resource.id}`, err);
+  }
 }
 
 async function createDefaultPolicy(as, resource, client) {
@@ -49,8 +53,12 @@ async function createDefaultPolicy(as, resource, client) {
 
 async function getDefaultRule(as, resource, policy) {
   logger.verbose(`Getting default rule for asId=${as.id} resourceId=${resource.id} policyId=${policy.id}`);
-  const rules = await rs.get(`/api/v1/as/${as.id}/resources/${resource.id}/policies/${policy.id}/rules`);
-  return rules.find(rule => rule.name === 'Default Rule');
+  try {
+    const rules = await rs.get(`/api/v1/as/${as.id}/resources/${resource.id}/policies/${policy.id}/rules`);
+    return rules.find(rule => rule.name === 'Default Rule');
+  } catch (err) {
+    throw new ApiError(`Failed to get default rule for asId=${as.id} resourceId=${resource.id} policyId=${policy.id}`, err);
+  }
 }
 
 // Todo: Verify this is correct

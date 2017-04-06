@@ -71,6 +71,9 @@ async function migrateApplication(application) {
     ]);
   } catch (err) {
     logger.error(err);
+    if (err.message.includes('Maximum number of instances has been reached')) {
+      throw new Error('Reached maximum number of OAuth applications - contact support to raise this limit');
+    }
   } finally {
     lg.end();
   }
@@ -82,12 +85,13 @@ async function migrateApplications() {
 
   const applications = stormpathExport.getApplications();
 
-  // TODO: App limit of 5! Need to have better strategy around error'ing
-  // out, and killing subsequent concurrent requests when one dies
-  applications.files = applications.files.slice(0, 5);
-
   logger.info(`Importing ${applications.length} applications`);
-  return applications.each(migrateApplication, { limit: 1 });
+
+  try {
+    await applications.each(migrateApplication, { limit: 1 });
+  } catch (err) {
+    logger.error(`Failed to import all applications: ${err.message}`);
+  }
 }
 
 module.exports = migrateApplications;

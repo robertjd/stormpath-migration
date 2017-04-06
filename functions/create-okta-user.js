@@ -5,14 +5,17 @@ const ApiError = require('../util/api-error');
 const USERS_PATH = '/api/v1/users';
 
 async function getExistingUser(profile) {
-  logger.verbose(`GET existing user login=${profile.login}`);
-  const users = await rs.get({
-    url: USERS_PATH,
-    qs: {
-      filter: `profile.login eq "${profile.login}"`
-    }
-  });
-  return users.length > 0 ? users[0] : null;
+  try {
+    const users = await rs.get({
+      url: USERS_PATH,
+      qs: {
+        filter: `profile.login eq "${profile.login}"`
+      }
+    });
+    return users.length > 0 ? users[0] : null;
+  } catch (err) {
+    throw new ApiError('Failed to get existing users', err);
+  }
 }
 
 async function updateExistingUser(id, profile) {
