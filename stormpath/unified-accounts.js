@@ -78,10 +78,6 @@ class UnifiedAccounts {
     return userIds;
   }
 
-  setOktaUserId(stormpathAccountId, oktaUserId) {
-    this.stormpathAccountIdMap[stormpathAccountId].setOktaUserId(oktaUserId);
-  }
-
 }
 
 module.exports = UnifiedAccounts;

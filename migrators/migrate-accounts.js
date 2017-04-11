@@ -16,6 +16,7 @@ async function migrateAccounts() {
         const profile = account.getProfileAttributes();
         const user = await createOktaUser(profile);
         account.setOktaUserId(user.id);
+        cache.userIdAccountMap[user.id] = account;
         for (let directoryId of account.directoryIds) {
           if (!cache.directoryUserMap[directoryId]) {
             cache.directoryUserMap[directoryId] = [];

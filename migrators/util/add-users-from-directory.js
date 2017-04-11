@@ -6,7 +6,7 @@ function addUsersFromDirectory(directoryId) {
   const userIds = cache.directoryUserMap[directoryId];
   const groupId = cache.directoryMap[directoryId];
 
-  if (!Array.isArray(userIds) || userIds.length == 0) {
+  if (!Array.isArray(userIds) || userIds.length === 0) {
     return;
   }
 

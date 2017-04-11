@@ -17,7 +17,7 @@ async function getDirectoryProviders() {
 /**
  * Introspect the stormpath export and set up initial mappings:
  * 1. Custom schema definitions
- * 2. TODO: Combined user mappings
+ * 2. Unified accounts
  */
 async function introspect() {
   logger.header('Introspecting stormpath export');
