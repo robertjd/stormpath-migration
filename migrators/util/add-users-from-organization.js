@@ -39,7 +39,7 @@ async function addUsersFromOrganization(orgId) {
   const groupId = cache.organizationMap[orgId];
   const userIds = cache.organizationAccountStoreMap[orgId];
 
-  if (!userIds || userIds.length == 0) {
+  if (!userIds || userIds.length === 0) {
     return;
   }
 

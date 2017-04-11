@@ -4,9 +4,10 @@ const rs = require('../util/request-scheduler');
 const stormpathExport = require('../stormpath/stormpath-export');
 const createOktaGroup = require('../functions/create-okta-group');
 const createGroupPasswordPolicy = require('../functions/create-group-password-policy');
-const createOAuth2Idp = require('../functions/create-oauth2-idp');
+const createSocialIdp = require('../functions/create-social-idp');
 const createSamlIdp = require('../functions/create-saml-idp');
 const addUsersFromDirectory = require('./util/add-users-from-directory');
+const linkUsersFromSocialDirectory = require('./util/link-users-from-social-directory');
 const config = require('../util/config');
 const cache = require('./util/cache');
 
@@ -21,10 +22,9 @@ async function migrateCloud(directory) {
   return addUsersFromDirectory(directory.id);
 }
 
-function migrateOAuth2(type, directory) {
-  // TODO: Link IdpUser OKTA-97257
+async function migrateSocial(type, directory) {
   const provider = directory.provider;
-  return createOAuth2Idp({
+  const idp = await createSocialIdp({
     type: type,
     name: `dir:${directory.name}`,
     creds: {
@@ -33,6 +33,8 @@ function migrateOAuth2(type, directory) {
     },
     scopes: provider.scope
   });
+  cache.directoryIdpMap[directory.id] = idp.id;
+  return linkUsersFromSocialDirectory(directory.id);
 }
 
 function migrateSaml(directory) {
@@ -70,11 +72,11 @@ async function migrateDirectory(directory) {
     case 'saml':
       return await migrateSaml(directory);
     case 'facebook':
-      return await migrateOAuth2('FACEBOOK', directory);
+      return await migrateSocial('FACEBOOK', directory);
     case 'google':
-      return await migrateOAuth2('GOOGLE', directory);
+      return await migrateSocial('GOOGLE', directory);
     case 'linkedin':
-      return await migrateOAuth2('LINKEDIN', directory);
+      return await migrateSocial('LINKEDIN', directory);
     case 'ad':
     case 'ldap':
       // We should include a link to some documentation they can use to setup

@@ -104,6 +104,10 @@ class Account extends Base {
     this.apiKeys = options.accountApiKeys[this.id] || [];
     this.accountIds = [this.id];
     this.directoryIds = [this.directory.id];
+    this.externalIds = {};
+    if (this.externalId) {
+      this.externalIds[this.directory.id] = this.externalId;
+    }
   }
 
   /**
@@ -138,6 +142,11 @@ class Account extends Base {
     // 4. Keep a record of which accounts have been merged
     this.accountIds.push(account.id);
     this.directoryIds.push(account.directory.id);
+
+    // 5. Add directoryId -> externalId mapping if there is an externalId
+    if (account.externalId) {
+      this.externalIds[account.directory.id] = account.externalId;
+    }
   }
 
   getProfileAttributes() {
@@ -212,6 +221,10 @@ class Account extends Base {
 
   getOktaUserId() {
     return this.oktaUserId;
+  }
+
+  getExternalIdForDirectory(directoryId) {
+    return this.externalIds[directoryId];
   }
 
 }

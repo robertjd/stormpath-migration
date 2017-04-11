@@ -29,6 +29,7 @@ function getIdpJson(options, kid) {
   return {
     type: 'SAML2',
     name: options.name,
+    status: 'ACTIVE',
     protocol: {
       type: 'SAML2',
       endpoints: {

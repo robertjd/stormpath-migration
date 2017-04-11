@@ -10,6 +10,9 @@ module.exports = {
   // Stormpath directoryId -> Okta groupId
   directoryMap: {},
 
+  // Stormpath directoryId -> Okta Social IDP
+  directoryIdpMap: {},
+
   // Stormpath directoryId -> [Okta userIds]
   directoryUserMap: {},
 
@@ -20,6 +23,9 @@ module.exports = {
   groupUserMap: {},
 
   // Stormpath organizationId -> Okta groupId
-  organizationMap: {}
+  organizationMap: {},
+
+  // Okta userId -> UnifiedAccount
+  userIdAccountMap: {}
 
 };
