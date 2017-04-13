@@ -16,7 +16,7 @@ class FileIterator {
       return;
     }
     this.dir = dir;
-    this.files = fs.readdirSync(dir, 'utf8');
+    this.files = fs.readdirSync(dir, 'utf8').filter((file) => file.endsWith('.json'))
 
     if (config.maxFiles) {
       this.files = this.files.slice(0, config.maxFiles);

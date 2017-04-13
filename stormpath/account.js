@@ -1,7 +1,9 @@
 const fs = require('fs');
+const generator = require('generate-password');
 const Base = require('./base');
 const logger = require('../util/logger');
 const config = require('../util/config');
+const convertMCF = require('../util/convert-mcf');
 const cache = require('../migrators/util/cache');
 
 /**
@@ -97,6 +99,46 @@ function addRequiredAttributes(profile) {
   return profile;
 }
 
+/**
+ * Generates credentials with a random password
+ */
+function generateRandomPasswordCreds() {
+  const password = generator.generate({
+    length: 30,
+    numbers: true,
+    symbols: true,
+    uppercase: true,
+    strict: true
+  });
+  return { password: { value: password }};
+}
+
+/**
+ * Creates creds object from an MCF formatted password. If the MCF identifier
+ * is not Bcrypt or Stormpath, return a random password.
+ *
+ * Note: We are not currently going to support stormpath2, which is another
+ * possible MCF identifier.
+ *
+ * @param {String} password MCF formatted password
+ */
+function transformMCFCreds(password, accountIds) {
+  const hash = convertMCF(password);
+  if (hash.algorithm !== 'BCRYPT' && hash.algorithm !== 'STORMPATH1') {
+    logger.warn(`MCF identifier '${hash.algorithm}' is not supported, generating random password for accountId=${accountIds}`);
+    return generateRandomPasswordCreds();
+  }
+  return {
+    password: {
+      hash
+    },
+    provider: {
+      type: 'IMPORT',
+      name: 'IMPORT'
+    }
+  };
+}
+
 class Account extends Base {
 
   constructor(filePath, json, options) {
@@ -179,6 +221,16 @@ class Account extends Base {
     }
 
     return profileAttributes;
+  }
+
+  getCredentials() {
+    // If there is no password, generate a random temporary password so that
+    // no activation email is sent.
+    if (!this.password) {
+      logger.warn(`No password set, generating random password for accountId=${this.accountIds}`);
+      return generateRandomPasswordCreds();
+    }
+    return transformMCFCreds(this.password, this.accountIds);
   }
 
   getCustomData() {

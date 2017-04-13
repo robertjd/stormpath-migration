@@ -18,50 +18,31 @@ async function getExistingUser(profile) {
   }
 }
 
-async function updateExistingUser(id, profile) {
-  logger.verbose(`Updating existing user with login=${profile.login} id=${id}`);
+// Note: We cannot update an imported password after the user is out of the
+// STAGED status.
+async function updateExistingUser(user, profile) {
+  logger.verbose(`Updating existing user with login=${profile.login} id=${user.id}`);
   try {
-    const user = await rs.post({
-      url: `${USERS_PATH}/${id}`,
-      body: {
-        profile
-        //TODO: once REQ-1274 is finished
-        //'credentials': {
-        //    "password": {
-        //         'algorithm': algorithm,
-        //         'iterationCount': iterationCount,
-        //         'value': hashedPassword
-        //    }
-        //}
-      }
+    Object.assign(user.profile, profile);
+    const updated = await rs.post({
+      url: `${USERS_PATH}/${user.id}`,
+      body: user
     });
-    logger.updated(`User id=${id} login=${profile.login}`);
-    return user;
+    logger.updated(`User id=${user.id} login=${profile.login}`);
+    return updated;
   } catch (err) {
-    throw new ApiError(`Failed to update okta user id=${id} login=${profile.login}`, err);
+    throw new ApiError(`Failed to update okta user id=${user.id} login=${profile.login}`, err);
   }
 }
 
-async function createNewUser(profile) {
+async function createNewUser(profile, credentials) {
   logger.verbose(`Creating user login=${profile.login}`);
   try {
     const user = await rs.post({
       url: USERS_PATH,
       body: {
         profile,
-        credentials: {
-          password: {
-            value: 'TEMPORARY_password1234'
-          }
-        }
-        //TODO: once REQ-1274 is finished
-        //'credentials': {
-        //    "password": {
-        //         'algorithm': algorithm,
-        //         'iterationCount': iterationCount,
-        //         'value': hashedPassword
-        //    }
-        //}
+        credentials
       }
     });
     logger.created(`User id=${user.id} login=${profile.login}`);
@@ -71,12 +52,12 @@ async function createNewUser(profile) {
   }
 }
 
-async function createOktaUser(profile) {
+async function createOktaUser(profile, credentials) {
   logger.verbose(`Trying to create User login=${profile.login}`);
   const user = await getExistingUser(profile);
   return user
-    ? updateExistingUser(user.id, profile)
-    : createNewUser(profile);
+    ? updateExistingUser(user, profile)
+    : createNewUser(profile, credentials);
 }
 
 module.exports = createOktaUser;
