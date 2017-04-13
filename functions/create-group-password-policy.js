@@ -74,18 +74,19 @@ async function getPasswordPolicy(name) {
   return passwordPolicies[name];
 }
 
-async function updatePasswordPolicy(groupId, policyId, policy) {
-  logger.verbose(`Updating existing password policy with name=${policy.name} id=${policyId}`);
+async function updatePasswordPolicy(existing, groupId, policy) {
+  logger.verbose(`Updating existing password policy with name=${policy.name} id=${existing.id}`);
   try {
+    Object.assign(existing, getPolicyJson(groupId, policy));
     const updated = await rs.put({
-      url: `${POLICY_PATH}/${policyId}`,
-      body: getPolicyJson(groupId, policy)
+      url: `${POLICY_PATH}/${existing.id}`,
+      body: existing
     });
-    logger.updated(`Password policy id=${policyId}`);
+    logger.updated(`Password policy id=${updated.id}`);
     await createDefaultRule(updated);
     return updated;
   } catch (err) {
-    throw new ApiError(`Failed to update password policy id=${policyId}`, err);
+    throw new ApiError(`Failed to update password policy id=${existing.id}`, err);
   }
 }
 
@@ -108,7 +109,7 @@ async function createGroupPasswordPolicy(groupId, policy) {
   logger.verbose(`Trying to create password policy name=${policy.name} for groupId=${groupId}`);
   const existing = await getPasswordPolicy(policy.name);
   return existing
-    ? updatePasswordPolicy(groupId, existing.id, policy)
+    ? updatePasswordPolicy(existing, groupId, policy)
     : createNewPasswordPolicy(groupId, policy);
 }
 

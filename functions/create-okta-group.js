@@ -28,17 +28,18 @@ async function updateExistingGroup(group, description) {
   }
 
   try {
-    const group = await rs.put({
-      url: `${GROUPS_PATH}/${group.id}`,
-      body: {
-        profile: {
-          name: group.profile.name,
-          description
-        }
+    Object.assign(group, {
+      profile: {
+        name: group.profile.name,
+        description
       }
     });
-    logger.updated(`Okta group id=${group.id} name=${group.profile.name}`);
-    return group;
+    const updated = await rs.put({
+      url: `${GROUPS_PATH}/${group.id}`,
+      body: group
+    });
+    logger.updated(`Okta group id=${updated.id} name=${updated.profile.name}`);
+    return updated;
   } catch (err) {
     throw new ApiError(`Failed to update Okta group name=${group.profile.name} id=${group.id}`, err);
   }

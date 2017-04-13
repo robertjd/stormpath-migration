@@ -97,17 +97,18 @@ async function getExistingIdp(name) {
   return exactMatches.length > 0 ? exactMatches[0] : null;
 }
 
-async function updateExistingIdp(id, json) {
-  logger.verbose(`Updating existing SAML IDP id=${id} name=${json.name}`);
+async function updateExistingIdp(idp, json) {
+  logger.verbose(`Updating existing SAML IDP id=${idp.id} name=${json.name}`);
   try {
+    Object.assign(idp, json);
     const updated = await rs.put({
-      url: `${IDP_PATH}/${id}`,
-      body: json
+      url: `${IDP_PATH}/${idp.id}`,
+      body: idp
     });
-    logger.updated(`SAML IDP id=${id} name=${updated.name}`);
+    logger.updated(`SAML IDP id=${idp.id} name=${updated.name}`);
     return updated;
   } catch (err) {
-    throw new ApiError(`Failed to update SAML IDP id=${id} name=${json.name}`, err);
+    throw new ApiError(`Failed to update SAML IDP id=${idp.id} name=${json.name}`, err);
   }
 }
 
@@ -131,7 +132,7 @@ async function createSamlIdp(options) {
   const json = getIdpJson(options, kid);
   const idp = await getExistingIdp(json.name);
   return idp
-    ? updateExistingIdp(idp.id, json)
+    ? updateExistingIdp(idp, json)
     : createNewIdp(json);
 }
 
