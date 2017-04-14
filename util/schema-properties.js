@@ -93,6 +93,23 @@ class SchemaProperties {
       properties[key] = getSchemaProperty(key, maxType);
     });
 
+    // Additional properties needed for Stormpath integrations
+    const tokenKey = 'emailVerificationToken';
+    const tokenSchema = getSchemaProperty(tokenKey, 'string');
+    tokenSchema.title = 'Email Verification Token';
+    tokenSchema.description = 'Can be sent to the user to verify their email address';
+    tokenSchema.maxLength = 64;
+    schemaTypeMap[tokenKey] = 'string';
+    properties[tokenKey] = tokenSchema;
+
+    const statusKey = 'emailVerificationStatus';
+    const statusSchema = getSchemaProperty(statusKey, 'string');
+    statusSchema.title = 'Email Verification Status';
+    statusSchema.description = 'Indicates if the user has verified their email address';
+    statusSchema.maxLength = 32;
+    schemaTypeMap[statusKey] = 'string';
+    properties[statusKey] = statusSchema;
+
     return { properties, schemaTypeMap };
   }
 

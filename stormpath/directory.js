@@ -46,7 +46,7 @@ function mapToOktaPolicy(directory, policy) {
           excludeUsername: false
         },
         age: {
-          maxAgeDays: 0,
+          maxAgeDays: -1,
           expireWarnDays: 0,
           minAgeMinutes: -1,
           historyCount: strength.preventReuse

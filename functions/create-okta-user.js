@@ -23,6 +23,11 @@ async function getExistingUser(profile) {
 async function updateExistingUser(user, profile) {
   logger.verbose(`Updating existing user with login=${profile.login} id=${user.id}`);
   try {
+    // We cannot update an imported password after user is ACTIVE
+    delete user.credentials;
+    // When updating the user, do not overwrite the recovery answer
+    delete profile.stormpathMigrationRecoveryAnswer;
+
     Object.assign(user.profile, profile);
     const updated = await rs.post({
       url: `${USERS_PATH}/${user.id}`,
@@ -52,12 +57,28 @@ async function createNewUser(profile, credentials) {
   }
 }
 
-async function createOktaUser(profile, credentials) {
+async function suspendUser(userId) {
+  logger.verbose('Suspending user id=${userId}');
+  try {
+    await rs.post(`/api/v1/users/${userId}/lifecycle/suspend`);
+    logger.info(`Suspended user id=${userId}`);
+  } catch (err) {
+    logger.error(new ApiError(`Failed to suspend user id=${userId}`, err));
+  }
+}
+
+async function createOktaUser(profile, credentials, status) {
   logger.verbose(`Trying to create User login=${profile.login}`);
-  const user = await getExistingUser(profile);
-  return user
-    ? updateExistingUser(user, profile)
-    : createNewUser(profile, credentials);
+  const existing = await getExistingUser(profile);
+  const user = existing
+    ? await updateExistingUser(existing, profile)
+    : await createNewUser(profile, credentials);
+
+  if (user && user.status !== 'SUSPENDED' && status === 'SUSPENDED') {
+    await suspendUser(user.id);
+  }
+
+  return user;
 }
 
 module.exports = createOktaUser;

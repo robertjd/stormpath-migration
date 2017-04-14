@@ -13,9 +13,11 @@ async function migrateAccounts() {
   try {
     await pool.each(accounts, async (account) => {
       try {
-        const profile = account.getProfileAttributes();
-        const creds = account.getCredentials();
-        const user = await createOktaUser(profile, creds);
+        const user = await createOktaUser(
+          account.getProfileAttributes(),
+          account.getCredentials(),
+          account.getStatus()
+        );
         account.setOktaUserId(user.id);
         cache.userIdAccountMap[user.id] = account;
         for (let directoryId of account.directoryIds) {

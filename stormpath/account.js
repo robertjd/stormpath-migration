@@ -146,10 +146,18 @@ class Account extends Base {
     this.apiKeys = options.accountApiKeys[this.id] || [];
     this.accountIds = [this.id];
     this.directoryIds = [this.directory.id];
+
     this.externalIds = {};
     if (this.externalId) {
       this.externalIds[this.directory.id] = this.externalId;
     }
+
+    this.recoveryAnswer = generator.generate({
+      length: 30,
+      numbers: true,
+      uppercase: true,
+      strict: true
+    });
   }
 
   /**
@@ -191,6 +199,10 @@ class Account extends Base {
     }
   }
 
+  getStatus() {
+    return this.status === 'DISABLED' ? 'SUSPENDED' : 'ACTIVE';
+  }
+
   getProfileAttributes() {
     // Note: firstName and lastName are required attributes. If these are not
     // available, default to "not_provided"
@@ -200,7 +212,8 @@ class Account extends Base {
       firstName: this.givenName,
       middleName: this.middleName,
       lastName: this.surname,
-      displayName: this.fullName
+      displayName: this.fullName,
+      emailVerificationStatus: this.emailVerificationStatus
     });
 
     const customData = this.getCustomData();
@@ -224,13 +237,22 @@ class Account extends Base {
   }
 
   getCredentials() {
-    // If there is no password, generate a random temporary password so that
-    // no activation email is sent.
+    let creds;
     if (!this.password) {
+      // If there is no password, generate a random temporary password so that
+      // no activation email is sent.
       logger.warn(`No password set, generating random password for accountId=${this.accountIds}`);
-      return generateRandomPasswordCreds();
+      creds = generateRandomPasswordCreds();
+    } else {
+      creds = transformMCFCreds(this.password, this.accountIds);
     }
-    return transformMCFCreds(this.password, this.accountIds);
+
+    creds.recovery_question = {
+      question: 'Stormpath recovery answer',
+      answer: this.recoveryAnswer
+    };
+
+    return creds;
   }
 
   getCustomData() {
@@ -263,6 +285,9 @@ class Account extends Base {
     if (numApiKeys > 10) {
       logger.warn(`Account id=${this.id} has ${numApiKeys} apiKeys, but max is 10. Dropping ${numApiKeys - 10} keys.`);
     }
+
+    // Add recovery question answer
+    customData['stormpathMigrationRecoveryAnswer'] = transform(this.recoveryAnswer);
 
     return customData;
   }
