@@ -26,7 +26,7 @@ async function introspect() {
   const schemaProperties = new SchemaProperties();
   const unifiedAccounts = new UnifiedAccounts(accountLinks);
   let numADLDAPAccounts = 0;
-  let numDisabled = 0;
+  let numUnverified = 0;
 
   const accounts = await stormpathExport.getAccounts();
   logger.info(`Pre-processing ${accounts.length} stormpath accounts`);
@@ -40,9 +40,9 @@ async function introspect() {
         numADLDAPAccounts++;
         return logger.verbose(`Skipping account id=${account.id}. Import using the Okta ${providerId.toUpperCase()} agent.`);
       }
-      if (account.status !== 'ENABLED') {
-        numDisabled++;
-        return logger.verbose(`Skipping disabled account id=${account.id}`);
+      if (account.status === 'UNVERIFIED') {
+        numUnverified++;
+        return logger.verbose(`Skipping unverified account id=${account.id}`);
       }
       let unifiedAccount = unifiedAccounts.addAccount(account);
       if (unifiedAccount) {
@@ -59,8 +59,8 @@ async function introspect() {
   if (numADLDAPAccounts > 0) {
     logger.warn(`Skipped ${numADLDAPAccounts} AD or LDAP accounts. Import using the Okta AD or LDAP agent.`);
   }
-  if (numDisabled > 0) {
-    logger.warn(`Skipped ${numDisabled} disabled accounts.`);
+  if (numUnverified > 0) {
+    logger.warn(`Skipped ${numUnverified} unverified accounts.`);
   }
 
   cache.unifiedAccounts = unifiedAccounts;
