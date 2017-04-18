@@ -108,7 +108,7 @@ function transform(original) {
     // is empty, or its first value is anything other than a number, use
     // the string array.
 
-    let typesAreSame = original.reduce((set, val) => set.add(typeof val), new Set()).size <= 1;
+    const typesAreSame = original.reduce((set, val) => set.add(typeof val), new Set()).size <= 1;
 
     type = (original.length > 0) && (typeof original[0] === 'number') && typesAreSame ? 'array-number' : 'array-string';
 
