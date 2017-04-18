@@ -44,13 +44,17 @@ async function createNewUser(profile, credentials) {
   logger.verbose(`Creating user login=${profile.login}`);
   try {
     const user = await rs.post({
-      url: USERS_PATH,
+      url: `${USERS_PATH}?activate=false`,
       body: {
         profile,
         credentials
       }
     });
     logger.created(`User id=${user.id} login=${profile.login}`);
+    const activate = await rs.post({
+      url: `${USERS_PATH}/${user.id}/lifecycle/activate?sendEmail=false`
+    });
+    logger.info(`Activated User id=${user.id} login=${profile.login}`);
     return user;
   } catch (err) {
     throw new ApiError(`Failed to create User login=${profile.login}`, err);

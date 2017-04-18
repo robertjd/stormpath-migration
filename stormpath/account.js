@@ -8,17 +8,71 @@ const cache = require('../migrators/util/cache');
 
 /**
  * Flattens custom data object, i.e:
- *   {
- *     address: {
- *       number: 5
- *       street: 'Brannan St.'
+ *
+ * {
+ *   "address": {
+ *     "street": "1st ave",
+ *     "zip": 1234
+ *   },
+ *   "freeForm": {},
+ *   "hello": "world",
+ *   "memos": [
+ *     "one",
+ *     "two",
+ *     "three"
+ *   ],
+ *   "nested": {
+ *     "again": {
+ *       "yolo": "swag"
  *     }
- *   }
+ *   },
+ *   "preferences": {
+ *     "theme": "blue",
+ *     "columns": [ "date", "time" ]
+ *   },
+ *   "favoriteNumbers": [ 7, 13 , 21],
+ *   "emptySet": [],
+ *   "mixedTypes1": [ 1, "a" ],
+ *   "mixedTypes2": [ "b", 2 ],
+ *   "someObjects": [ { "option1" : "foo" }, { "option2" : "foo" }]
+ * }
+ *
  * Becomes:
- *   {
- *     address_number: 5,
- *     address_street: 'Brannan St'
- *   }
+ *
+ * {
+ *    "address_street": "1st ave",
+ *    "address_zip": 1234,
+ *    "hello": "world",
+ *    "memos": [
+ *      "one",
+ *      "two",
+ *      "three"
+ *    ],
+ *    "nested_again_yolo": "swag",
+ *    "preferences_theme": "blue",
+ *    "preferences_columns": [
+ *      "date",
+ *      "time"
+ *    ],
+ *    "favoriteNumbers": [
+ *      7,
+ *      13,
+ *      21
+ *    ],
+ *    "emptySet": [],
+ *    "mixedTypes1": [
+ *      "1",
+ *      "a"
+ *    ],
+ *    "mixedTypes2": [
+ *      "b",
+ *      "2"
+ *    ],
+ *    "someObjects": [
+ *      "{\"option1\":\"foo\"}",
+ *      "{\"option2\":\"foo\"}"
+ *    ]
+ * }
  */
 function flattenCustomData(customData, prefix = '') {
   const keys = Object.keys(customData);
@@ -53,11 +107,13 @@ function transform(original) {
     // There are three array types - string, number, and integer. If the array
     // is empty, or its first value is anything other than a number, use
     // the string array.
-    type = original.length > 0 && typeof original[0] === 'number'
-      ? 'array-number'
-      : 'array-string';
+
+    let typesAreSame = original.reduce((set, val) => set.add(typeof val), new Set()).size <= 1;
+
+    type = (original.length > 0) && (typeof original[0] === 'number') && typesAreSame ? 'array-number' : 'array-string';
+
     val = original.map((item) => {
-      return type === 'array-string' ? JSON.stringify(item) : item;
+      return type === 'array-number' ? item : (typeof item === 'string' ? item : JSON.stringify(item));
     });
   }
   else if (typeof original === 'boolean') {
@@ -271,7 +327,7 @@ class Account extends Base {
         if (key.indexOf('stormpathApiKey_') === 0) {
           throw new Error(`${key} is a reserved property name`);
         }
-        customData[key] = transform(this.customData[key]);
+        customData[key] = transform(flattened[key]);
       }
     }
 

@@ -5,7 +5,6 @@ function getSchemaProperty(key, type) {
     title: key,
     description: key,
     type,
-    scope: 'SYSTEM',
     required: false,
     permissions: [{
       principal: 'SELF',
