@@ -51,7 +51,7 @@ async function createNewUser(profile, credentials) {
       }
     });
     logger.created(`User id=${user.id} login=${profile.login}`);
-    const activate = await rs.post({
+    activate = await rs.post({
       url: `${USERS_PATH}/${user.id}/lifecycle/activate?sendEmail=false`
     });
     logger.info(`Activated User id=${user.id} login=${profile.login}`);
