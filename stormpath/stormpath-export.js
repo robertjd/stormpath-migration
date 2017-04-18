@@ -3,6 +3,7 @@ const fs = require('fs');
 const AccountLinks = require('./account-links');
 const Account = require('./account');
 const AccountStoreMapping = require('./account-store-mapping');
+const Application = require('./application');
 const Base = require('./base');
 const Directory = require('./directory');
 const logger = require('../util/logger');
@@ -44,7 +45,7 @@ class StormpathExport {
   }
 
   getApplications() {
-    return new FileIterator(`${this.baseDir}/applications`, Base);
+    return new FileIterator(`${this.baseDir}/applications`, Application);
   }
 
   getAccountStoreMappings() {

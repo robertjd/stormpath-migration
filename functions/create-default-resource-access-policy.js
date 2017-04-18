@@ -61,8 +61,23 @@ async function getDefaultRule(as, resource, policy) {
   }
 }
 
-// Todo: Verify this is correct
-async function createDefaultRule(as, resource, policy) {
+async function updateDefaultRule(as, resource, policy, rule, tokenLimits) {
+  logger.verbose(`Updating existing default policy rule id=${rule.id}`);
+  try {
+    // Only token limits can be updated (i.e. accessTokenLifetimeMinutes, etc)
+    rule.actions.token = tokenLimits;
+    const updated = await rs.put({
+      url: `/api/v1/as/${as.id}/resources/${resource.id}/policies/${policy.id}/rules/${rule.id}`,
+      body: rule
+    });
+    logger.updated(`Default policy rule id=${rule.id} for asId=${as.id} policyId=${policy.id}`);
+    return updated;
+  } catch (err) {
+    throw new ApiError(`Failed to update default resource policy rule id=${rule.id}`, err);
+  }
+}
+
+async function createDefaultRule(as, resource, policy, tokenLimits) {
   logger.verbose(`Creating default resource policy rule for asId=${as.id} resourceId=${resource.id} policyId=${policy.id}`);
   try {
     const rule = await rs.post({
@@ -96,13 +111,7 @@ async function createDefaultRule(as, resource, policy) {
               access: 'ALLOW'
             }]
           },
-          token: {
-            // Note: We should be populating this from the Stormpath
-            // OAuthPolicyResource (not available yet in the export)
-            accessTokenLifetimeMinutes: 60,
-            refreshTokenLifetimeMinutes: 0,
-            refreshTokenWindowMinutes: 10080
-          }
+          token: tokenLimits
         }
       }
     });
@@ -113,7 +122,7 @@ async function createDefaultRule(as, resource, policy) {
   }
 }
 
-async function createDefaultResourceAccessPolicy(as, client) {
+async function createDefaultResourceAccessPolicy(as, client, tokenLimits) {
   logger.verbose(`Trying to create default resource access policy for asId=${as.id} and clientId=${client.client_id}`);
   const defaultResource = await getDefaultResource(as);
 
@@ -126,9 +135,9 @@ async function createDefaultResourceAccessPolicy(as, client) {
 
   let defaultRule = await getDefaultRule(as, defaultResource, defaultPolicy);
   if (defaultRule) {
-    logger.exists(`Found default policy rule id=${defaultRule.id} for asId=${as.id} policyId=${defaultPolicy.id}`);
+    await updateDefaultRule(as, defaultResource, defaultPolicy, defaultRule, tokenLimits);
   } else {
-    await createDefaultRule(as, defaultResource, defaultPolicy);
+    await createDefaultRule(as, defaultResource, defaultPolicy, tokenLimits);
   }
 }
 
