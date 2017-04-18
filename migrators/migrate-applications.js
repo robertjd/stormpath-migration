@@ -66,7 +66,7 @@ async function migrateApplication(application) {
     ]);
     await addGroupsToApplication(application, client);
     await allSettled([
-      createDefaultResourceAccessPolicy(as, client),
+      createDefaultResourceAccessPolicy(as, client, application.tokenLimits),
       addAuthorizationServerToOAuthClient(as, client)
     ]);
   } catch (err) {
