@@ -9,7 +9,7 @@ const cache = require('./util/cache');
 async function migrateGroup(membershipMap, stormpathGroup) {
   const lg = logger.group(`Stormpath group id=${stormpathGroup.id} name=${stormpathGroup.name}`);
   try {
-    const name = `group:${stormpathGroup.directory.id}:${stormpathGroup.name}`;
+    const name = `group:${cache.directoryMap[stormpathGroup.directory.id]}:${stormpathGroup.name}`;
     const description = stormpathGroup.description;
     const oktaGroup = await createOktaGroup(name, description);
     cache.groupMap[stormpathGroup.id] = oktaGroup.id;
