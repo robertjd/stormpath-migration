@@ -77,11 +77,42 @@ function loadPasswordPolicy(directory) {
   }
 }
 
+function loadUserInfoMappingRules(directory) {
+  const mappings = [];
+  if (!directory.provider.userInfoMappingRules) {
+    logger.verbose(`No userInfoMappingRules for directoryId=${directory.id}`);
+    return mappings;
+  }
+
+  const filePath = `${config.stormPathBaseDir}/userInfoMappingRules/${directory.id}.json`;
+  try {
+    logger.verbose(`Loading userInfoMappingRules for directoryId=${directory.id}`);
+    const rules = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    for (let item of rules.items) {
+      for (let attribute of item.accountAttributes) {
+        // Account attributes are mapped to custom user schema properties by:
+        // 1. Flattening, i.e. replacing '.' with '_'
+        // 2. Removing the customData prefix, which is not in the user profile
+        const userAttribute = attribute.replace('customData.', '').replace(/\./g, '_');
+        mappings.push({
+          externalName: item.name,
+          userAttribute
+        });
+      }
+    }
+    return mappings;
+  } catch (err) {
+    logger.error(`Failed to read userInfoMappingRules for directoryId=${directory.id}: ${err}`);
+  }
+
+}
+
 class Directory extends Base {
 
   constructor(filePath, json) {
     super(filePath, json);
     this.passwordPolicy = loadPasswordPolicy(json);
+    this.attributeMappings = loadUserInfoMappingRules(json);
     if (json.provider.providerId === 'saml') {
       this.signingCert = this.provider.encodedX509SigningCert
         .replace('-----BEGIN CERTIFICATE-----\n', '')

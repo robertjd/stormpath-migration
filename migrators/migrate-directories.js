@@ -8,6 +8,7 @@ const createSocialIdp = require('../functions/create-social-idp');
 const createSamlIdp = require('../functions/create-saml-idp');
 const addUsersFromDirectory = require('./util/add-users-from-directory');
 const linkUsersFromSocialDirectory = require('./util/link-users-from-social-directory');
+const addAndMapIdpAttributes = require('../functions/add-and-map-idp-attributes');
 const config = require('../util/config');
 const cache = require('./util/cache');
 
@@ -33,6 +34,7 @@ async function migrateSocial(type, directory) {
     },
     scopes: provider.scope
   });
+  await addAndMapIdpAttributes(idp.id, directory.attributeMappings);
   cache.directoryIdpMap[directory.id] = idp.id;
   return linkUsersFromSocialDirectory(directory.id);
 }
