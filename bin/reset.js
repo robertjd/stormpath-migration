@@ -1,10 +1,10 @@
-// Helper script to reset org state
+#!/usr/bin/env node
 
-const rs = require('./util/request-scheduler');
-const logger = require('./util/logger');
-const config = require('./util/config');
-const ConcurrencyPool = require('./util/concurrency-pool');
-const ApiError = require('./util/api-error');
+const rs = require('../util/request-scheduler');
+const logger = require('../util/logger');
+const config = require('../util/config');
+const ConcurrencyPool = require('../util/concurrency-pool');
+const ApiError = require('../util/api-error');
 
 logger.setLevel(config.logLevel);
 const pool = new ConcurrencyPool(config.concurrencyLimit);
