@@ -1,22 +1,25 @@
 {
-  "name": "@okta/salamander-migration",
-  "version": "1.0.0",
+  "name": "@okta/stormpath-migration",
+  "version": "0.1.0",
   "description": "Migration tool to import Stormpath data into an Okta tenant",
-  "main": "migrate.js",
+  "bin": {
+    "import-stormpath": "./bin/migrate.js",
+    "reset-okta": "./bin/reset.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/okta/salamander-migration.git"
+    "url": "git+https://github.com/okta/stormpath-migration.git"
   },
   "keywords": [
-    "salamander"
+    "stormpath", "okta"
   ],
   "bugs": {
-    "url": "https://github.com/okta/salamander-migration/issues"
+    "url": "https://github.com/okta/stormpath-migration/issues"
   },
-  "homepage": "https://github.com/okta/salamander-migration#readme",
+  "homepage": "https://github.com/okta/stormpath-migration#readme",
   "dependencies": {
     "bluebird": "^3.4.7",
     "chalk": "^1.1.3",
