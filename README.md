@@ -1,5 +1,5 @@
-# salamander-migration
-This repo maintains the migration tools and scripts for Salamander customer migration to Okta.
+# stormpath-migration
+This repo maintains the migration tools and scripts for Stormpath customer migration to Okta.
 
 https://oktawiki.atlassian.net/wiki/display/eng/Salamander+Customer+Migrations
 
@@ -90,7 +90,7 @@ node migrate.js --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://yo
 
 - Example: `--oktaBaseUrl https://your-org.okta.com`
 
-**--oktaApiToken (-t)** API token for your Okta tenant (SSWS token)
+**--oktaApiToken (-t)** [API token for your Okta tenant](http://developer.okta.com/docs/api/getting_started/getting_a_token.html) (SSWS token)
 
 - Example: `--oktaApiToken 00gdoRRz2HUBdy06kTDwTOiPeVInGKpKfG-H4P_Lij`
 
