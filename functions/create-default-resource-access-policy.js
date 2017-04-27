@@ -90,6 +90,7 @@ async function createDefaultRule(as, resource, policy, tokenLimits) {
         conditions: {
           grantTypes: {
             include: [
+              'authorization_code',
               'password'
             ]
           },
