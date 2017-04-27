@@ -93,11 +93,11 @@ $ import-stormpath --stormPathBaseDir /path/to/export/data --oktaBaseUrl https:/
 
 ### Optional Args
 
-**--customData (-d)** Strategy for importing Stormpath Account custom data. Defaults to `schema`.
+**--customData (-d)** Strategy for importing Stormpath Account custom data. Defaults to `flatten`.
 
 - Options
 
-  - `schema` - Add [custom user profile schema properties](http://developer.okta.com/docs/api/resources/schemas.html#user-profile-schema-property-object) for each custom data property. Use this for simple custom data objects.
+  - `flatten` - Add [custom user profile schema properties](http://developer.okta.com/docs/api/resources/schemas.html#user-profile-schema-property-object) for each custom data property. Use this for simple custom data objects.
   - `stringify` - Stringify the Account custom data object into one `customData` [custom user profile schema property](http://developer.okta.com/docs/api/resources/schemas.html#user-profile-schema-property-object). Use this for more complex custom data objects.
   - `exclude` - Exclude Stormpath Account custom data from the import
 

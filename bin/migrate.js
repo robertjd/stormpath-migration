@@ -14,6 +14,7 @@ const migrateOrganizations = require('../migrators/migrate-organizations');
 
 logger.setLevel(config.logLevel);
 logger.info(`Starting import...`);
+logger.info(`Writing log output to ${logger.logFile}`);
 
 async function migrate() {
   try {
@@ -28,6 +29,7 @@ async function migrate() {
     await migrateApplications();
 
     logger.header('Done');
+    logger.info(`Wrote log output to ${logger.logFile}`);
     console.timeEnd('migrate');
   } catch (err) {
     logger.error(err);

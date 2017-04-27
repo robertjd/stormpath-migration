@@ -317,7 +317,7 @@ class Account extends Base {
     if (config.isCustomDataStringify) {
       customData['customData'] = transform(JSON.stringify(this.customData));
     }
-    else if (config.isCustomDataSchema) {
+    else if (config.isCustomDataFlatten) {
       const skip = ['createdAt', 'modifiedAt', 'href', 'id'];
       const flattened = flattenCustomData(this.customData);
       const keys = Object.keys(flattened).filter(key => !skip.includes(key));

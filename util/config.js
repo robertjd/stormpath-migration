@@ -33,8 +33,8 @@ const config = yargs
       description: 'Strategy for importing Account custom data',
       required: false,
       alias: 'd',
-      choices: ['schema', 'stringify', 'exclude'],
-      default: 'schema'
+      choices: ['flatten', 'stringify', 'exclude'],
+      default: 'flatten'
     },
     concurrencyLimit: {
       description: 'Max number of concurrent transactions',
@@ -64,7 +64,7 @@ const config = yargs
   })
   .argv;
 
-config.isCustomDataSchema = config.customData === 'schema';
+config.isCustomDataFlatten = config.customData === 'flatten';
 config.isCustomDataStringify = config.customData === 'stringify';
 config.isCustomDataExclude = config.customData === 'exclude';
 
