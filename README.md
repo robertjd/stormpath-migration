@@ -69,12 +69,12 @@ Here's a concrete example:
 
 ### To Install:
 ```
-$ npm install -g @okta/stormpath-migration
+npm install -g @okta/stormpath-migration
 ```
 
 ### To Run:
 ```
-$ import-stormpath --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://your-org.okta.com --oktaApiToken 5DSfsl4x@3Slt6
+import-stormpath --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://your-org.okta.com --oktaApiToken 5DSfsl4x@3Slt6
 ```
 
 ### Required Args
