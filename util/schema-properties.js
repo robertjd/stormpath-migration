@@ -1,15 +1,17 @@
 const logger = require('./logger');
 
+const HIDDEN_FIELDS = [
+  'stormpathMigrationRecoveryAnswer',
+  'emailVerificationToken',
+  'emailVerificationStatus'
+];
+
 function getSchemaProperty(key, type) {
   const property = {
     title: key,
     description: key,
     type,
-    required: false,
-    permissions: [{
-      principal: 'SELF',
-      action: 'READ_WRITE'
-    }]
+    required: false
   };
   switch (type) {
   case 'array-string':
@@ -33,6 +35,19 @@ function getSchemaProperty(key, type) {
   default:
     throw new Error(`Unknown schema type: ${type}`);
   }
+
+  if (key.indexOf('stormpathApiKey_') === 0 || HIDDEN_FIELDS.includes(key)) {
+    property.permissions = [{
+      principal: 'SELF',
+      action: 'HIDE'
+    }];
+  } else {
+    property.permissions = [{
+      principal: 'SELF',
+      action: 'READ_WRITE'
+    }];
+  }
+
   return property;
 }
 
