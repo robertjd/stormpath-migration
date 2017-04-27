@@ -1,10 +1,12 @@
 'use strict';
 
+const os = require('os');
 const Promise = require('bluebird');
 const rp = require('request-promise');
-const logger = require('../util/logger');
-const config = require('../util/config');
-const ConcurrencyPool = require('../util/concurrency-pool');
+const logger = require('./logger');
+const config = require('./config');
+const ConcurrencyPool = require('./concurrency-pool');
+const packageJson = require('../package.json');
 
 // The max number of concurrent requests. Note, this is different from the
 // concurrencyLimit in the config, which defines the max number of concurrent
@@ -69,6 +71,13 @@ async function schedule(scheduler, msg, fn) {
 }
 
 /**
+ * Constructs user agent based on environment information
+ */
+function getUserAgent() {
+  return `stormpath-migration/${packageJson.version} node/${process.versions.node} ${os.platform()}/${os.release()}`;
+}
+
+/**
  * Class that wraps request-promise with two enhancements:
  * 1. Limits the number of concurrent requests that are made at any given time
  * 2. Defers executing new requests if rate-limit is hit
@@ -84,7 +93,8 @@ class RequestScheduler {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `SSWS ${config.oktaApiToken}`
+        'Authorization': `SSWS ${config.oktaApiToken}`,
+        'User-Agent': getUserAgent()
       },
       resolveWithFullResponse: true,
       json: true,

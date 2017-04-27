@@ -1,5 +1,7 @@
 const winston = require('winston');
 const chalk = require('chalk');
+const path = require('path');
+const fs = require('fs');
 const prettyJson = require('prettyjson');
 const columnify = require('columnify');
 const ApiError = require('./api-error');
@@ -67,6 +69,15 @@ function formatLine(title, options) {
   return `${date} ${title}${message}\n${prependSpaces(metaStr)}`;
 }
 
+// Create logger directory if it does not exist, and generate a unique name
+// for this current run.
+const logDir = path.resolve(__dirname, '../logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+const time = (new Date().toISOString()).replace(/:|\./g, '');
+const logFile = `${logDir}/import-${time}.json`;
+
 let indent = 0;
 
 const levels = {
@@ -131,6 +142,9 @@ const logger = new (winston.Logger)({
         }
         return formatLine(title, options);
       }
+    }),
+    new (winston.transports.File)({
+      filename: logFile
     })
   ]
 });
@@ -146,5 +160,7 @@ logger.group = (title) => {
     end: () => indent--
   };
 }
+
+logger.logFile = logFile;
 
 module.exports = logger;
