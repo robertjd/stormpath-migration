@@ -24,7 +24,8 @@ function getIdpJson(options) {
         action: 'AUTO',
         profileMaster: true,
         groups: {
-          action: 'NONE'
+          action: 'ASSIGN',
+          assignments: [options.groupId]
         }
       },
       accountLink: {
