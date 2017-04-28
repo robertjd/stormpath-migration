@@ -77,6 +77,9 @@ $ npm install -g @okta/stormpath-migration
 $ import-stormpath --stormPathBaseDir /path/to/export/data --oktaBaseUrl https://your-org.okta.com --oktaApiToken 5DSfsl4x@3Slt6
 ```
 
+*Note*: output is logged to the console as well as to a json log file. The first and last line of output
+indicate where the JSON log file was written to.
+
 ### Required Args
 
 **--stormPathBaseDir (-b)** Root directory where your Stormpath tenant export data lives
