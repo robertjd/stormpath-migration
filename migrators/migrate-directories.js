@@ -64,7 +64,7 @@ async function migrateSocial(type, directory) {
   return linkUsersFromSocialDirectory(directory.id);
 }
 
-function migrateSaml(directory) {
+async function migrateSaml(directory) {
   const provider = directory.provider;
   let requestAlgorithm;
   switch (provider.requestSignatureAlgorithm) {
@@ -78,12 +78,13 @@ function migrateSaml(directory) {
     logger.error(`Invalid request algorithm: ${provider.requestSignatureAlgorithm}`);
     return;
   }
-  return createSamlIdp({
+  const idp = await createSamlIdp({
     signingCert: directory.signingCert,
     name: `dir:${directory.name}`,
     requestSignatureAlgorithm: requestAlgorithm,
     ssoLoginUrl: provider.ssoLoginUrl
   });
+  return addAndMapIdpAttributes(idp.id, directory.attributeMappings);
 }
 
 async function migrateDirectory(directory) {

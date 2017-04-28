@@ -81,6 +81,7 @@ function getIdpJson(options, kid) {
       maxClockSkew: 120000,
       provisioning: {
         action: 'AUTO',
+        profileMaster: true,
         groups: {
           action: 'NONE'
         }
