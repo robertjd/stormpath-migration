@@ -10,7 +10,10 @@ async function migrateGroup(membershipMap, stormpathGroup) {
   const lg = logger.group(`Stormpath group id=${stormpathGroup.id} name=${stormpathGroup.name}`);
   try {
     const name = `group:${cache.directoryMap[stormpathGroup.directory.id]}:${stormpathGroup.name}`;
-    const description = stormpathGroup.description;
+    let description = `Stormpath groupId=${stormpathGroup.id}`;
+    if (stormpathGroup.description) {
+      description += `: ${stormpathGroup.description}`;
+    }
     const oktaGroup = await createOktaGroup(name, description);
     cache.groupMap[stormpathGroup.id] = oktaGroup.id;
     await addUsersFromGroup(stormpathGroup.id);

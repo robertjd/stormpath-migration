@@ -12,9 +12,17 @@ const addAndMapIdpAttributes = require('../functions/add-and-map-idp-attributes'
 const config = require('../util/config');
 const cache = require('./util/cache');
 
+function directoryDescription(directory) {
+  let description = `Stormpath directoryId=${directory.id}`;
+  if (directory.description) {
+    description += `: ${directory.description}`;
+  }
+  return description;
+}
+
 async function migrateCloud(directory) {
   const name = `dir:${directory.name}`;
-  const description = directory.description;
+  const description = directoryDescription(directory);
   const group = await createOktaGroup(name, description);
   cache.directoryMap[directory.id] = group.id;
   if (directory.passwordPolicy) {
@@ -24,10 +32,15 @@ async function migrateCloud(directory) {
 }
 
 async function migrateSocial(type, directory) {
+  const name = `dir:${directory.name}`;
+  const description = directoryDescription(directory);
+  const group = await createOktaGroup(name, description);
+  cache.directoryMap[directory.id] = group.id;
   const provider = directory.provider;
   const idp = await createSocialIdp({
     type: type,
-    name: `dir:${directory.name}`,
+    name,
+    groupId: group.id,
     creds: {
       clientId: provider.clientId,
       clientSecret: provider.clientSecret
@@ -36,6 +49,7 @@ async function migrateSocial(type, directory) {
   });
   await addAndMapIdpAttributes(idp.id, directory.attributeMappings);
   cache.directoryIdpMap[directory.id] = idp.id;
+  await addUsersFromDirectory(directory.id);
   return linkUsersFromSocialDirectory(directory.id);
 }
 
