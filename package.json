@@ -1,6 +1,6 @@
 {
   "name": "@okta/stormpath-migration",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Migration tool to import Stormpath data into an Okta tenant",
   "bin": {
     "import-stormpath": "./bin/migrate.js",
@@ -14,7 +14,8 @@
     "url": "git+https://github.com/okta/stormpath-migration.git"
   },
   "keywords": [
-    "stormpath", "okta"
+    "stormpath",
+    "okta"
   ],
   "bugs": {
     "url": "https://github.com/okta/stormpath-migration/issues"
