@@ -32,7 +32,7 @@ async function getAccountStoreMap() {
     case 'groups':
       oktaGroupId = cache.groupMap[id];
       break;
-    case 'orgs':
+    case 'organizations':
       oktaGroupId = cache.organizationMap[id];
       break;
     case 'directories':
